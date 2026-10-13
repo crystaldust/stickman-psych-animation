@@ -1,0 +1,112 @@
+{
+  "bvid": "BV136hn6sEnd",
+  "title": "荣格说：每个人都有两次生命。第一次是活给别人看的，第二次是活给自己的，而第二次生命常常从四十岁开始。",
+  "summary": "借「荣格说人有两次生命」引出中年转向：前半生向外适应，后半生向内个体化，中年危机是自我觉醒。",
+  "themes": [
+    "中年危机",
+    "自我成长",
+    "分析心理学"
+  ],
+  "structure": [
+    {
+      "role": "hook",
+      "start": 0.0,
+      "text": "心理学大师荣格曾说，每个人都有两次生命，第一次是活给别人看的，第二次是活给自己的。"
+    },
+    {
+      "role": "concept",
+      "start": 15.0,
+      "text": "荣格认为，40岁前是人生的第一个成年期，我们忙于适应外部世界。"
+    },
+    {
+      "role": "reframe",
+      "start": 42.0,
+      "text": "多数人会在中年遭遇强烈的心理危机，这并非人生出了问题，而是沉睡多年的真实自我开始觉醒。"
+    },
+    {
+      "role": "concept",
+      "start": 59.0,
+      "text": "荣格指出，人生后半程的核心使命是个体化整合，接纳自己的阴影。"
+    },
+    {
+      "role": "closing",
+      "start": 94.0,
+      "text": "所谓两次生命，不过是前半生认识世界，后半生找回自己。"
+    }
+  ],
+  "claims": [
+    {
+      "id": "c1",
+      "quote": "每个人都有两次生命，第一次是活给别人看的，第二次是活给自己的。第二次生命常常从40岁开始。",
+      "attributed_to": "荣格",
+      "work": null,
+      "verdict": "misattributed",
+      "original": "we cannot live the afternoon of life according to the programme of life's morning; for what was great in the morning will be little at evening, and what in the morning was true will at evening have become a lie.",
+      "source": {
+        "author": "卡尔·荣格",
+        "title": "人生的阶段",
+        "locator": "The Stages of Life / Die Lebenswende (1930)，《荣格全集》第 8 卷 §§773–784（据二手资料，未核对印本）",
+        "url": null
+      },
+      "notes": "以「荣格曾说」的原话形式呈现，但荣格著作中没有「两次生命」「活给别人看」这样的句子，中文网络流传版本均无书名页码。最接近的真实观点是《人生的阶段》中「人生的上午与下午」，转折在 35–40 岁。source-hunter 判为 paraphrase；按「原话呈现须有对应原句」规则修正为 misattributed。另：「人生从四十岁开始」常被误归于荣格，实出自 Walter Pitkin 1932 年的书。"
+    },
+    {
+      "id": "c2",
+      "quote": "人生后半程的核心使命是个体化整合，接纳自己的阴影，与过去的缺憾和解，统合意识与潜意识，重建一个完整、真实、自洽的自我。",
+      "attributed_to": "荣格",
+      "work": null,
+      "verdict": "paraphrase",
+      "original": "The afternoon of life is just as full of meaning as the morning; only, its meaning and purpose are different.",
+      "source": {
+        "author": "卡尔·荣格",
+        "title": "人生的阶段",
+        "locator": "The Stages of Life (1930)，《荣格全集》第 8 卷；相关论述另见《分析心理学两论》第 7 卷 §114（据二手资料，未核对印本）",
+        "url": "https://jungiancenter.org/enjoying-the-afternoon-of-life-jung-on-aging/"
+      },
+      "notes": "以「荣格指出」的观点形式呈现，荣格确实主张后半生转向内在、与个体化和整合无意识相关，判为意译。「与过去的缺憾和解」是视频自己的发挥，不是荣格的说法。"
+    },
+    {
+      "id": "c3",
+      "quote": "人这一生，先向外成长，再向内归真。",
+      "attributed_to": null,
+      "work": null,
+      "verdict": "no_attribution",
+      "original": null,
+      "source": null,
+      "notes": "作者自己的总结。"
+    }
+  ],
+  "concepts": [
+    {
+      "name": "个体化",
+      "origin": "荣格",
+      "source": {
+        "author": "卡尔·荣格",
+        "title": "分析心理学两论",
+        "locator": "《荣格全集》第 7 卷",
+        "url": null
+      }
+    },
+    {
+      "name": "阴影",
+      "origin": "荣格",
+      "source": {
+        "author": "卡尔·荣格",
+        "title": "伊雍：自性现象学研究",
+        "locator": "《荣格全集》第 9 卷第二部分",
+        "url": null
+      }
+    },
+    {
+      "name": "人生的上午与下午",
+      "origin": "荣格",
+      "source": {
+        "author": "卡尔·荣格",
+        "title": "人生的阶段",
+        "locator": "《荣格全集》第 8 卷",
+        "url": null
+      }
+    }
+  ],
+  "analyzed_at": "2026-10-13"
+}

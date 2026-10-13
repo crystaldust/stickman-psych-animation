@@ -80,6 +80,29 @@ data/<mid>/<bvid>/transcript.info.json  # 主文案用的 Whisper 模型
 data/<mid>/<bvid>/subtitles.<语言>.srt  # B 站官方字幕对照（需登录，可能不存在）
 ```
 
+## 文案分析与创作
+
+在 Claude Code 里用两个 skill 完成，Python 命令负责读数据、校验和查重：
+
+```bash
+/analyze-script BV1CSWXzAEys     # 拆解结构、列出引用，并行派 source-hunter 核实出处，保存到 analysis/
+/analyze-script pending          # 处理所有还没分析的文案
+/write-script 分手后总想弄明白为什么   # 按 docs/style-guide.md 和出处库写原创草稿到 drafts/，并自动查重
+```
+
+对应的命令行工具：
+
+```bash
+uv run stickman corpus list|show <BV>|export --output out/corpus.md   # 读已采集的文案
+uv run stickman analysis list|show <BV>|save <file>                  # 分析结果（保存时校验格式）
+uv run stickman library build|show                                    # 出处库 library/sources.jsonl
+uv run stickman draft check drafts/xxx.md                             # 篇幅统计 + 和已采集文案查重
+```
+
+- 引用判定：原话 / 意译 / 误引 / 无法核实 / 未注明出处。草稿只能引用「原话」和「意译」。
+- 查重：去掉标点后，连续 15 字以上和任一已采集文案相同就报警（退出码 1）。60 字以内、成对的中文引号里的直接引用不计入。没有可比较的文案时退出码为 2。
+- `analysis/`、`library/`、`drafts/` 是我们自己的工作成果，纳入 git；`data/` 不入库。
+
 ## 开发
 
 ```bash

@@ -1,0 +1,76 @@
+{
+  "bvid": "BV14FeA6zE8s",
+  "title": "“生活只能向后理解，却必须向前生活”",
+  "summary": "用克尔凯郭尔日记里的名句，指出它常被误读为安慰：活在时间之中的人永远得不到完整的事后视角。",
+  "themes": [
+    "存在主义",
+    "亲密关系",
+    "时间与意义"
+  ],
+  "structure": [
+    {
+      "role": "hook",
+      "start": 0.0,
+      "text": "哲学里最震撼我的一句话是，生活只能向后理解，却必须向前生活。"
+    },
+    {
+      "role": "example",
+      "start": 5.0,
+      "text": "当你第一次遇见你的对象时，通常并不会意识到那一天到底有多特别。"
+    },
+    {
+      "role": "example",
+      "start": 33.0,
+      "text": "一场争吵发生的时候，你可能只是觉得两个人今天心情不好……原来一切早有征兆。"
+    },
+    {
+      "role": "concept",
+      "start": 45.0,
+      "text": "这就是为什么克尔凯郭尔说，哲学里的那句话的确是真的，生活必须向后理解。"
+    },
+    {
+      "role": "reframe",
+      "start": 68.0,
+      "text": "但事实真的如此吗？……后半句话才是他真正想表达的观念。"
+    },
+    {
+      "role": "closing",
+      "start": 114.0,
+      "text": "当你终于知道一件事情对你来说意味着什么的时候，它往往已经过去了。"
+    }
+  ],
+  "claims": [
+    {
+      "id": "c1",
+      "quote": "生活只能向后理解，却必须向前生活。",
+      "attributed_to": "克尔凯郭尔",
+      "work": null,
+      "verdict": "verbatim",
+      "original": "Det er ganske sandt, hvad Philosophien siger, at Livet maa forstaaes baglænds. Men derover glemmer man den anden Sætning, at det maa leves forlænds.",
+      "source": {
+        "author": "索伦·克尔凯郭尔",
+        "title": "日记 JJ（1843）",
+        "locator": "JJ:167，SKS 第 18 卷第 306 页（Hong 英译 IV A 164）",
+        "url": "https://homepage.divms.uiowa.edu/~jorgen/kierkegaardquotesource.html"
+      },
+      "notes": "忠实翻译。注意前半句是克尔凯郭尔引述「哲学的说法」，视频的单句版本略有简化；「只能」比原文「必须（maa）」语气稍强。"
+    },
+    {
+      "id": "c2",
+      "quote": "我们越是思考，就越会明白这个命题，处在时间之中的生活，其实永远不可能被完全理解。因为我们没有任何一个时刻能够获得彻底的安定，从而真正站到那个位置上，向后回望。",
+      "attributed_to": "克尔凯郭尔",
+      "work": null,
+      "verdict": "verbatim",
+      "original": "Hvilken Sætning, jo meer den gjennemtænkes, netop ender med, at Livet i Timeligheden aldrig ret bliver forstaaeligt, netop fordi jeg intet Øieblik kan faae fuldelig Ro til at indtage Stillingen: baglænds.",
+      "source": {
+        "author": "索伦·克尔凯郭尔",
+        "title": "日记 JJ（1843）",
+        "locator": "JJ:167，SKS 第 18 卷第 306 页",
+        "url": "https://homepage.divms.uiowa.edu/~jorgen/kierkegaardquotesource.html"
+      },
+      "notes": "同一则日记的后半段，忠实翻译。丹麦文后半段由 source-hunter 依据对 SKS 的了解补全，页面抓取被截断，未逐字核对。"
+    }
+  ],
+  "concepts": [],
+  "analyzed_at": "2026-10-13"
+}

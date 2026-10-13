@@ -14,4 +14,7 @@ data/
 *.cookies
 cookies/
 .env
+
+# /analyze-script 保存前的临时 JSON
+analysis/.drafts/
 .DS_Store
