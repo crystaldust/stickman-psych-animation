@@ -9,12 +9,13 @@ from pathlib import Path
 from .bili import AccessDeniedError, BiliClient, BiliError, ClientOptions
 from .media import MediaError, extract_audio
 from .models import VideoEntry
-from .pipeline import Context, collect_user, list_user, process_video
+from .pipeline import MAX_JOBS, Context, VideoResult, collect_user, list_user, process_video
 from .storage import Layout
 from .targets import Target, TargetError, parse_target
 from .transcribe import DEFAULT_MODEL, transcribe_audio
 
 EXIT_OK, EXIT_FAILED, EXIT_USAGE, EXIT_INTERRUPTED = 0, 1, 2, 130
+DEFAULT_JOBS = 1  # 实测瓶颈在 Whisper，网络并发 2 没有提速，默认对 B 站更友好
 NOISY_LOGGERS = ("httpx", "httpcore", "huggingface_hub", "urllib3")
 COOKIE_HINT = "提示：加上 --cookies-from-browser chrome（或 safari / firefox / edge），使用已登录 B 站的浏览器 cookies"
 MLX_HINT = "转写需要 Apple Silicon 上的 mlx-whisper，请确认在 M 系列 Mac 上运行并执行过 uv sync"
@@ -24,6 +25,13 @@ def _positive_int(value: str) -> int:
     number = int(value)
     if number <= 0:
         raise argparse.ArgumentTypeError("必须是正整数")
+    return number
+
+
+def _jobs(value: str) -> int:
+    number = int(value)
+    if not 1 <= number <= MAX_JOBS:
+        raise argparse.ArgumentTypeError(f"必须在 1 到 {MAX_JOBS} 之间")
     return number
 
 
@@ -42,6 +50,9 @@ def build_parser() -> argparse.ArgumentParser:
     cookies.add_argument("--cookies", type=Path, metavar="FILE", help="Netscape 格式的 cookies 文件（只读使用）")
     parser.add_argument("--sleep", type=_non_negative_float, default=1.0, help="请求间隔秒数（默认 1.0）")
     parser.add_argument("--model", default=DEFAULT_MODEL, help="Whisper 模型（Hugging Face repo）")
+    parser.add_argument(
+        "--no-subtitles", action="store_true", help="不额外保存 B 站官方字幕对照（默认登录时会另存 subtitles.<语言>.srt）"
+    )
     parser.add_argument("-v", "--verbose", action="store_true", help="输出调试日志")
 
     sub = parser.add_subparsers(dest="command", required=True)
@@ -54,14 +65,17 @@ def build_parser() -> argparse.ArgumentParser:
     p_fetch.add_argument("target", help="BV 号或视频链接")
     p_fetch.add_argument("--video", action="store_true", help="下载视频文件")
     p_fetch.add_argument("--audio", action="store_true", help="抽取音频为 wav")
-    p_fetch.add_argument("--transcribe", action="store_true", help="转写成带时间戳的文案（含抽音频）")
+    p_fetch.add_argument("--transcribe", action="store_true", help="用 Whisper 转写成带时间戳的文案")
 
     p_collect = sub.add_parser("collect", help="批量处理 up 主的视频，已完成的会跳过")
     p_collect.add_argument("target", help="mid 或空间链接")
     p_collect.add_argument("--limit", type=_positive_int, help="最多处理多少条（从最新开始）")
     p_collect.add_argument("--video", action="store_true", help="同时下载视频文件")
     p_collect.add_argument("--audio", action="store_true", help="抽取音频为 wav")
-    p_collect.add_argument("--transcribe", action="store_true", help="转写成带时间戳的文案（含抽音频）")
+    p_collect.add_argument("--transcribe", action="store_true", help="用 Whisper 转写成带时间戳的文案")
+    p_collect.add_argument(
+        "--jobs", type=_jobs, default=DEFAULT_JOBS, help=f"同时访问 B 站的任务数，1–{MAX_JOBS}（默认 {DEFAULT_JOBS}）；Whisper 始终串行"
+    )
     return parser
 
 
@@ -76,6 +90,8 @@ def build_context(args: argparse.Namespace) -> Context:
         layout=Layout(Path(args.data_dir)),
         extract_audio=extract_audio,
         transcribe_audio=partial(transcribe_audio, model=args.model),
+        use_subtitles=not args.no_subtitles,
+        transcriber_name=f"whisper:{args.model}",
     )
 
 
@@ -103,13 +119,23 @@ def _run_list(args: argparse.Namespace, target: Target) -> int:
     return EXIT_OK
 
 
+def _describe_source(result: VideoResult) -> str:
+    if result.transcript_source:
+        return f"来源：{result.transcript_source}"
+    if result.transcript_reused:
+        return "已有文案，跳过（旧版本生成，来源未记录）"
+    return "来源：未知"
+
+
 def _run_fetch(args: argparse.Namespace, target: Target) -> int:
     result = process_video(
         build_context(args), target.id, video=args.video, audio=args.audio, transcribe=args.transcribe
     )
     print(f"保存到：{result.directory}")
     if result.transcript:
-        print(f"文案：{result.transcript}")
+        print(f"文案：{result.transcript}（{_describe_source(result)}）")
+    if result.subtitles:
+        print(f"官方字幕对照：{result.subtitles}")
     return EXIT_OK
 
 
@@ -121,6 +147,7 @@ def _run_collect(args: argparse.Namespace, target: Target) -> int:
         video=args.video,
         audio=args.audio,
         transcribe=args.transcribe,
+        jobs=args.jobs,
     )
     print(f"完成 {len(report.done)}，跳过 {len(report.skipped)}，失败 {len(report.failed)}")
     for failure in report.failed:

@@ -227,3 +227,29 @@ def test_download_raises_when_nothing_written(tmp_path):
 
     with pytest.raises(BiliError, match="no file"):
         client(fake).download_audio("BV1CSWXzAEys", tmp_path)
+
+
+SRT = "1\n00:00:00,000 --> 00:00:01,500\n你好\n"
+
+
+def test_fetch_subtitles_returns_language_and_segments():
+    info = {**VIDEO_INFO, "subtitles": {"danmaku": [{"ext": "xml"}], "ai-zh": [{"ext": "srt", "data": SRT}]}}
+    fake, created = make_factory({VIDEO_URL: info})
+
+    lang, segments = client(fake).fetch_subtitles("BV1CSWXzAEys")
+
+    assert lang == "ai-zh"
+    assert [s.text for s in segments] == ["你好"]
+    assert created[0]["writesubtitles"] is True
+
+
+def test_fetch_subtitles_none_without_login():
+    fake, _ = make_factory({VIDEO_URL: {**VIDEO_INFO, "subtitles": {"danmaku": [{"ext": "xml"}]}}})
+
+    assert client(fake).fetch_subtitles("BV1CSWXzAEys") is None
+
+
+def test_fetch_subtitles_none_when_srt_is_empty():
+    fake, _ = make_factory({VIDEO_URL: {**VIDEO_INFO, "subtitles": {"ai-zh": [{"ext": "srt", "data": ""}]}}})
+
+    assert client(fake).fetch_subtitles("BV1CSWXzAEys") is None

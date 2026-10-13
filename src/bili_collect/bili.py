@@ -16,7 +16,9 @@ import yt_dlp
 from yt_dlp.utils import YoutubeDLError
 
 from .models import VideoEntry
+from .subtitles import parse_srt, pick_subtitle
 from .targets import BVID_PATTERN, Target
+from .transcribe import Segment
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +80,17 @@ class BiliClient:
             raise BiliError(f"video id mismatch: requested {bvid}, got {info.get('id')!r}")
         meta = {key: info[key] for key in META_FIELDS if key in info}
         return {**meta, "id": bvid, **{k: _strip_query(meta[k]) for k in URL_FIELDS if meta.get(k)}}
+
+    def fetch_subtitles(self, bvid: str) -> tuple[str, tuple[Segment, ...]] | None:
+        """B 站官方字幕（需登录 cookies）。返回 (语言代码, 分段)，没有可用字幕时返回 None。"""
+        extra = {"noplaylist": True, "ignore_no_formats_error": True, "writesubtitles": True}
+        info = self._extract(Target("video", bvid).url, extra)
+        picked = pick_subtitle(info.get("subtitles"))
+        if not picked:
+            return None
+        lang, srt = picked
+        segments = parse_srt(srt)
+        return (lang, segments) if segments else None
 
     @staticmethod
     def entry_from_meta(info: dict[str, Any]) -> VideoEntry:

@@ -3,8 +3,10 @@ import json
 import pytest
 
 from bili_collect.transcribe import (
+    CHINESE_PROMPT,
     DEFAULT_MODEL,
     Segment,
+    apply_corrections,
     format_srt,
     format_srt_time,
     format_txt,
@@ -59,7 +61,59 @@ def test_transcribe_audio_calls_engine_with_chinese_defaults(tmp_path):
     assert path == str(audio)
     assert kwargs["path_or_hf_repo"] == DEFAULT_MODEL
     assert kwargs["language"] == "zh"
-    assert "简体" in kwargs["initial_prompt"]
+    assert kwargs["initial_prompt"] == CHINESE_PROMPT  # 实测：加长提示词（热词）会让 Whisper 整段漏识别
+    assert "hallucination_silence_threshold" not in kwargs  # 实测会把「友谊」识别成「有意」
+
+
+@pytest.mark.parametrize(
+    "wrong, right",
+    [
+        ("奇泽克在意识形态的崇高课体中", "齐泽克在意识形态的崇高客体中"),
+        ("骑泽克的体系", "齐泽克的体系"),
+        ("舒本华说过", "叔本华说过"),
+        ("科尔凯估尔说", "克尔凯郭尔说"),
+        ("加谬说过", "加缪说过"),
+        ("一臂九鲁", "伊壁鸠鲁"),
+        ("思维反处", "思维反刍"),
+        ("《论字链》", "《论自恋》"),
+        ("我们的友谊", "我们的友谊"),
+        ("更加谬误的是", "更加谬误的是"),
+        ("增加谬论", "增加谬论"),
+    ],
+)
+def test_apply_corrections_fixes_known_mishearings_only(wrong, right):
+    assert apply_corrections(wrong) == right
+
+
+def test_transcribe_audio_applies_corrections(tmp_path):
+    raw = {"segments": [{"start": 0, "end": 1, "text": "舒本华说过。", "words": []}]}
+    audio = tmp_path / "audio.wav"
+    audio.write_bytes(b"x")
+
+    assert transcribe_audio(audio, engine=lambda p, **k: raw) == (Segment(0.0, 1.0, "叔本华说过。"),)
+
+
+def test_transcribe_audio_removes_known_hallucinations(tmp_path):
+    raw = {
+        "segments": [
+            {
+                "start": 0,
+                "end": 9,
+                "text": "",
+                "words": words(
+                    ("别慌张。", 0.0, 1.0),
+                    ("请不吝点赞 订阅 转发 打赏支持明镜与点点栏目", 1.0, 5.0),
+                    ("请不吝点赞 订阅 转发 打赏支持明镜与点点栏目", 5.0, 9.0),
+                ),
+            },
+            {"start": 9, "end": 10, "text": "字幕由Amara.org社区提供", "words": []},
+            {"start": 10, "end": 11, "text": "请不吝点赞，订阅，转发。打赏支持明镜与点点栏目", "words": []},
+        ]
+    }
+    audio = tmp_path / "audio.wav"
+    audio.write_bytes(b"x")
+
+    assert transcribe_audio(audio, engine=lambda p, **k: raw) == (Segment(0.0, 1.0, "别慌张。"),)
 
 
 def words(*items):
@@ -130,9 +184,14 @@ def test_transcribe_audio_missing_file(tmp_path):
 
 
 def test_write_transcript_outputs_three_formats(tmp_path):
-    paths = write_transcript(tmp_path, SEGMENTS)
+    paths = write_transcript(tmp_path, SEGMENTS, source="whisper:test-model")
 
-    assert sorted(p.name for p in paths) == ["transcript.json", "transcript.srt", "transcript.txt"]
+    assert sorted(p.name for p in paths) == [
+        "transcript.info.json", "transcript.json", "transcript.srt", "transcript.txt"
+    ]
+    info = json.loads((tmp_path / "transcript.info.json").read_text(encoding="utf-8"))
+    assert info["source"] == "whisper:test-model"
+    assert info["segments"] == 2
     data = json.loads((tmp_path / "transcript.json").read_text(encoding="utf-8"))
     assert data == [
         {"start": 0.0, "end": 2.5, "text": "不要太急着去谈恋爱"},

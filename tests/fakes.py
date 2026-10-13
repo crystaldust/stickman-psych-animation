@@ -64,7 +64,17 @@ def meta_for(bvid: str, title: str = "标题", uploader_id: str | None = MID) ->
 class FakeClient:
     """满足 pipeline.VideoSource 协议的内存实现。"""
 
-    def __init__(self, listing=(), failing=(), error_cls=BiliError, uploader_id: str | None = MID):
+    def __init__(
+        self,
+        listing=(),
+        failing=(),
+        error_cls=BiliError,
+        uploader_id: str | None = MID,
+        subtitles=None,
+        subtitle_error=None,
+    ):
+        self.subtitles = subtitles
+        self.subtitle_error = subtitle_error
         self.listing = list(listing)
         self.failing = set(failing)
         self.error_cls = error_cls
@@ -80,6 +90,12 @@ class FakeClient:
         if bvid in self.failing:
             raise self.error_cls(f"boom {bvid}")
         return meta_for(bvid, uploader_id=self.uploader_id)
+
+    def fetch_subtitles(self, bvid: str):
+        self.calls.append(("subtitles", bvid))
+        if self.subtitle_error:
+            raise self.subtitle_error
+        return self.subtitles
 
     @staticmethod
     def entry_from_meta(info: dict[str, Any]) -> VideoEntry:

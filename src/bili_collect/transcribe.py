@@ -1,4 +1,4 @@
-"""调用 mlx-whisper 转写音频，并输出 txt / srt / json 三种格式的文案。"""
+"""调用 mlx-whisper 转写音频，并输出 txt / srt / json 文案及来源信息。"""
 
 import re
 from collections.abc import Callable, Iterable
@@ -10,6 +10,28 @@ from .storage import write_json, write_text
 
 DEFAULT_MODEL = "mlx-community/whisper-large-v3-turbo"
 CHINESE_PROMPT = "以下是普通话的句子，使用简体中文，并带有标点符号。"
+# Whisper 常见的人名、术语同音错写（实测加热词提示词会导致整段漏识别，所以改用确定性纠错）。
+# 只收录「本身不是正常词语」的错写，避免误改（如不收「有意」→「友谊」）。
+CORRECTIONS = tuple(
+    (re.compile(pattern), right)
+    for pattern, right in (
+        ("[奇骑]泽克", "齐泽克"),
+        ("舒[本德]华", "叔本华"),
+        ("[科克]尔凯估尔", "克尔凯郭尔"),
+        ("加谬(?![误论])", "加缪"),  # 不改「更加谬误」「增加谬论」
+        ("一臂九鲁", "伊壁鸠鲁"),
+        ("弗洛依德", "弗洛伊德"),
+        ("崇高课体", "崇高客体"),
+        ("思维反处", "思维反刍"),
+        ("论字链", "论自恋"),
+    )
+)
+# Whisper 在片尾纯音乐段常见的训练数据残留
+HALLUCINATION_PATTERNS = re.compile(
+    r"请不吝点赞[\s，。、,.]*订阅[\s，。、,.]*转发[\s，。、,.]*打赏支持明镜与点点栏目"
+    r"|字幕由\s*Amara\.org\s*社区提供"
+    r"|由\s*Amara\.org\s*社区提供的字幕"
+)
 SENTENCE_ENDINGS = ("。", "！", "？", "；", "…", "!", "?", ";")
 CLOSING_MARKS = "”’」』）)\"'"
 FULL_WIDTH = {",": "，", "?": "？", "!": "！", ";": "；", ":": "："}
@@ -31,7 +53,11 @@ def _default_engine() -> Engine:
     return mlx_whisper.transcribe
 
 
-def transcribe_audio(path: Path, engine: Engine | None = None, model: str = DEFAULT_MODEL) -> tuple[Segment, ...]:
+def transcribe_audio(
+    path: Path,
+    engine: Engine | None = None,
+    model: str = DEFAULT_MODEL,
+) -> tuple[Segment, ...]:
     if not path.exists():
         raise FileNotFoundError(path)
     run = engine or _default_engine()
@@ -43,11 +69,23 @@ def transcribe_audio(path: Path, engine: Engine | None = None, model: str = DEFA
         word_timestamps=True,
         verbose=None,
     )
-    return tuple(
+    sentences = (
         sentence
         for raw in result.get("segments", [])
         for sentence in _split_sentences(raw)
     )
+    cleaned = (Segment(s.start, s.end, apply_corrections(remove_hallucinations(s.text))) for s in sentences)
+    return tuple(s for s in cleaned if s.text)
+
+
+def remove_hallucinations(text: str) -> str:
+    return HALLUCINATION_PATTERNS.sub("", text).strip()
+
+
+def apply_corrections(text: str) -> str:
+    for pattern, right in CORRECTIONS:
+        text = pattern.sub(right, text)
+    return text
 
 
 def normalize_punctuation(text: str) -> str:
@@ -107,10 +145,15 @@ def format_txt(segments: Iterable[Segment]) -> str:
     return "".join(lines)
 
 
-def write_transcript(directory: Path, segments: Iterable[Segment]) -> tuple[Path, ...]:
+def write_transcript(directory: Path, segments: Iterable[Segment], *, source: str) -> tuple[Path, ...]:
+    """写出 txt / srt / json 三种格式，以及记录来源的 transcript.info.json。
+
+    transcript.json 是「已完成」标记，所以最后写；中途失败时下次会重新生成。
+    """
     visible = _visible(segments)
-    txt, srt, data = (directory / f"transcript.{ext}" for ext in ("txt", "srt", "json"))
+    txt, srt, info, data = (directory / f"transcript.{ext}" for ext in ("txt", "srt", "info.json", "json"))
     write_text(txt, format_txt(visible))
     write_text(srt, format_srt(visible))
+    write_json(info, {"source": source, "segments": len(visible)})
     write_json(data, [{"start": s.start, "end": s.end, "text": s.text} for s in visible])
-    return txt, srt, data
+    return txt, srt, info, data

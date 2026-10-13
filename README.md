@@ -29,8 +29,25 @@ uv run bili-collect fetch BV1CSWXzAEys --audio
 uv run bili-collect collect 3546974439607171 --limit 30 --transcribe
 ```
 
-`fetch` 和 `collect` 都支持 `--video` / `--audio` / `--transcribe`，可以任意组合（`--transcribe` 已包含抽音频）。
+`fetch` 和 `collect` 都支持 `--video` / `--audio` / `--transcribe`，可以任意组合。
 `--cookies-from-browser`、`--data-dir`、`--sleep` 等全局选项必须写在子命令**之前**，例如 `bili-collect --sleep 2 collect ...`。
+
+### 文案从哪来
+
+`--transcribe` 用 **Whisper** 生成主文案（有标点、一句一行，适合阅读和分析）。登录时还会**另存 B 站官方字幕**作为对照：
+
+- 官方字幕保存为 `subtitles.<语言>.srt`，比如 `subtitles.ai-zh.srt`（B 站 AI 字幕）或 `subtitles.zh-CN.srt`（人工字幕）
+- 需要登录：带上 `--cookies-from-browser chrome`。不带 cookies 或视频没有字幕时，只是没有这份对照文件，不影响主文案
+- 官方字幕没有标点，并且按屏幕显示长度断句，常在句子中间断开，所以不作为主文案。适合用来核对人名
+- 不需要对照时加全局选项 `--no-subtitles`，可以少发一次请求
+- `transcript.info.json` 记录主文案用的是哪个 Whisper 模型
+- 想用新规则重新生成某篇文案：删掉它目录下的 `transcript.json` 再跑一次
+- Whisper 结果会自动去掉片尾音乐段的幻觉句（如「请不吝点赞 订阅 转发…」），并纠正常见人名错写（叔本华、齐泽克、克尔凯郭尔等，见 `transcribe.CORRECTIONS`）
+
+### 批量速度
+
+`collect` 采用流水线：下载在后台线程进行，Whisper 在主线程逐个转写，下载时间被转写时间覆盖（实测约快 20%）。
+`--jobs N`（1–4，默认 1）控制同时访问 B 站的任务数。瓶颈在 Whisper，一般不需要调大；Whisper 始终一次只跑一个——在 M 系列芯片上实测并发转写反而更慢。
 
 支持的输入：BV 号、视频链接（含 `?spm_id_from=...` 等参数）、b23.tv 短链、mid、空间链接。
 
@@ -44,7 +61,7 @@ uv run bili-collect --cookies-from-browser chrome list 3546974439607171
 
 第一次读取 Chrome cookies 时，macOS 会请求钥匙串访问权限。cookies 只在本地使用，不会写入任何文件。也可以用 `--cookies cookies.txt` 指定 Netscape 格式的文件（已在 `.gitignore` 中忽略）。
 
-全局选项（放在子命令前）：`--data-dir`（默认 `data`）、`--sleep`（请求间隔秒数，默认 1.0）、`--model`（Whisper 模型）、`-v`。
+全局选项（放在子命令前）：`--data-dir`（默认 `data`）、`--sleep`（请求间隔秒数，默认 1.0）、`--model`（Whisper 模型）、`--no-subtitles`、`-v`。
 
 ## 输出结构
 
@@ -57,6 +74,8 @@ data/<mid>/<bvid>/video.mp4      # 仅 --video
 data/<mid>/<bvid>/transcript.txt # [mm:ss] 一句一行
 data/<mid>/<bvid>/transcript.srt
 data/<mid>/<bvid>/transcript.json
+data/<mid>/<bvid>/transcript.info.json  # 主文案用的 Whisper 模型
+data/<mid>/<bvid>/subtitles.<语言>.srt  # B 站官方字幕对照（需登录，可能不存在）
 ```
 
 ## 开发

@@ -20,8 +20,8 @@ def recorder(monkeypatch):
         calls.append(("fetch", bvid, video, audio, transcribe))
         return VideoResult(bvid=bvid, mid="42", directory=Path("/tmp/x"), transcript=None)
 
-    def fake_collect(ctx, mid, *, limit=None, video=False, audio=False, transcribe=False):
-        calls.append(("collect", mid, limit, video, audio, transcribe))
+    def fake_collect(ctx, mid, *, limit=None, video=False, audio=False, transcribe=False, jobs=1):
+        calls.append(("collect", mid, limit, video, audio, transcribe, jobs))
         return CollectReport(done=("BV1",), skipped=(), failed=(Failure("BV2", "boom"),))
 
     monkeypatch.setattr(cli, "list_user", fake_list)
@@ -50,14 +50,26 @@ def test_collect_reports_failures_with_nonzero_exit(recorder, capsys):
     code = cli.main(["collect", "42", "--transcribe"])
 
     assert code == 1
-    assert recorder == [("collect", "42", None, False, False, True)]
+    assert recorder == [("collect", "42", None, False, False, True, 1)]
     assert "BV2" in capsys.readouterr().err
 
 
 def test_collect_accepts_all_three_output_flags(recorder):
     cli.main(["collect", "42", "--audio", "--video", "--transcribe"])
 
-    assert recorder == [("collect", "42", None, True, True, True)]
+    assert recorder == [("collect", "42", None, True, True, True, 1)]
+
+
+def test_collect_jobs_option(recorder):
+    cli.main(["collect", "42", "--jobs", "3"])
+
+    assert recorder[0][-1] == 3
+
+
+@pytest.mark.parametrize("jobs", ["0", "5", "-1"])
+def test_collect_jobs_is_bounded(recorder, jobs):
+    with pytest.raises(SystemExit):
+        cli.main(["collect", "42", "--jobs", jobs])
 
 
 def test_wrong_target_kind_is_rejected(recorder, capsys):
@@ -145,3 +157,41 @@ def test_build_context_wires_options(tmp_path):
     assert ctx.layout.root == tmp_path
     assert ctx.client.options.cookies_from_browser == "chrome"
     assert ctx.client.options.sleep_seconds == 1.5
+
+
+def test_build_context_subtitle_options(tmp_path):
+    args = cli.build_parser().parse_args(["--data-dir", str(tmp_path), "--no-subtitles", "--model", "m", "list", "42"])
+
+    ctx = cli.build_context(args)
+
+    assert ctx.use_subtitles is False
+    assert ctx.transcriber_name == "whisper:m"
+    assert ctx.transcribe_audio.keywords == {"model": "m"}
+
+
+def test_build_context_defaults_to_subtitles(tmp_path):
+    ctx = cli.build_context(cli.build_parser().parse_args(["--data-dir", str(tmp_path), "list", "42"]))
+
+    assert ctx.use_subtitles is True
+
+
+@pytest.mark.parametrize(
+    "result_kwargs, expected",
+    [
+        ({"transcript": Path("/x/transcript.txt"), "transcript_source": "whisper:m"}, "来源：whisper:m"),
+        ({"transcript": Path("/x/transcript.txt"), "transcript_reused": True}, "已有文案，跳过（旧版本生成，来源未记录）"),
+        (
+            {"transcript": Path("/x/transcript.txt"), "transcript_source": "whisper:m", "subtitles": Path("/x/s.srt")},
+            "官方字幕对照：/x/s.srt",
+        ),
+    ],
+)
+def test_fetch_output_describes_transcript(monkeypatch, capsys, result_kwargs, expected):
+    monkeypatch.setattr(cli, "build_context", lambda args: object())
+    monkeypatch.setattr(
+        cli, "process_video", lambda ctx, bvid, **kw: VideoResult(bvid=bvid, mid="42", directory=Path("/x"), **result_kwargs)
+    )
+
+    cli.main(["fetch", "BV1CSWXzAEys", "--transcribe"])
+
+    assert expected in capsys.readouterr().out
