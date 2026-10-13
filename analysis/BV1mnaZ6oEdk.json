@@ -1,0 +1,102 @@
+{
+  "bvid": "BV1mnaZ6oEdk",
+  "title": "为什么所有关系都不能和好如初？因为信任和爱，都是不可再生的资源。",
+  "summary": "借叔本华的刺猬（豪猪）寓言，论证一次伤害会让双方的距离永久重新校准，关系修补后回不到最初。",
+  "themes": [
+    "亲密关系",
+    "信任",
+    "防御机制"
+  ],
+  "structure": [
+    {
+      "role": "hook",
+      "start": 0.0,
+      "text": "为什么所有关系都不能和好如初？因为信任和爱都是不可再生的资源。"
+    },
+    {
+      "role": "concept",
+      "start": 5.0,
+      "text": "叔本华讲过一群刺猬过冬，挤在一起取暖，靠太近会被扎伤，离太远又冷得受不了。"
+    },
+    {
+      "role": "reframe",
+      "start": 23.0,
+      "text": "多数人以为，这是说人和人要保持距离。但叔本华真正想说的不是这个。"
+    },
+    {
+      "role": "example",
+      "start": 76.0,
+      "text": "一对闹翻又和好的朋友吃饭。受过伤的人笑归笑，眼神先确认对方表情，再决定话说到哪。"
+    },
+    {
+      "role": "concept",
+      "start": 91.0,
+      "text": "叔本华说，刺猬找到的距离一旦确定，就不会再缩回最初。"
+    },
+    {
+      "role": "closing",
+      "start": 169.0,
+      "text": "一段关系在经历伤害之后还能维持，靠的不是回到过去，而是双方都接受了这个新的距离。"
+    }
+  ],
+  "claims": [
+    {
+      "id": "c1",
+      "quote": "一群刺猬过冬，挤在一起取暖，靠太近会被扎伤，离太远又冷得受不了。反复试探后，他们找到一个中间距离，不太疼，也还能留点体温。",
+      "attributed_to": "叔本华",
+      "work": null,
+      "verdict": "paraphrase",
+      "original": "bis sie eine mäßige Entfernung von einander herausgefunden hatten, in der sie es am besten aushalten konnten.",
+      "source": {
+        "author": "阿图尔·叔本华",
+        "title": "附录与补遗",
+        "locator": "Parerga und Paralipomena (1851) 第 2 卷第 31 章「比喻、寓言和故事」§396；Payne 英译本第 2 卷 pp. 651–652",
+        "url": "https://en.wikipedia.org/wiki/Hedgehog%27s_dilemma"
+      },
+      "notes": "寓言属实，视频是复述，判为意译。原文是豪猪（Stachelschweine），不是刺猬。叔本华自己的解释：社交需要源于内心空虚把人推到一起，各自讨厌的毛病又把人推开，找到的折中距离就是「礼貌和得体」；内心温暖充足的人宁愿远离社交。德文原文大部分据 source-hunter 记忆，只有末句经搜索结果印证。"
+    },
+    {
+      "id": "c2",
+      "quote": "刺猬找到的距离一旦确定，就不会再缩回最初。不是不愿靠近，而是疼痛留下的东西不在皮肤上，在记忆里。",
+      "attributed_to": "叔本华",
+      "work": null,
+      "verdict": "misattributed",
+      "original": null,
+      "source": {
+        "author": "阿图尔·叔本华",
+        "title": "附录与补遗",
+        "locator": "第 2 卷第 31 章 §396（寓言原文中没有这层意思）",
+        "url": "https://philosophybreak.com/articles/porcupine-dilemma-schopenhauer-wistful-parable-on-human-connection"
+      },
+      "notes": "以「叔本华说」的原话形式呈现，但寓言原文没有「距离一旦确定不会缩回」「疼痛留在记忆里」的说法，叔本华的解释也不涉及伤害后的关系修复。这是视频作者自己的引申，也是整期视频的核心论点，最多只能写成「借用叔本华的刺猬寓言」。"
+    },
+    {
+      "id": "c3",
+      "quote": "这就是防御机制……可一旦启动，就不会轻易关停。",
+      "attributed_to": null,
+      "work": null,
+      "verdict": "no_attribution",
+      "original": null,
+      "source": null,
+      "notes": "借用精神分析的「防御机制」一词描述受伤后的戒备，是作者自己的阐释。"
+    }
+  ],
+  "concepts": [
+    {
+      "name": "豪猪困境（刺猬困境）",
+      "origin": "叔本华",
+      "source": {
+        "author": "阿图尔·叔本华",
+        "title": "附录与补遗",
+        "locator": "第 2 卷 §396",
+        "url": null
+      }
+    },
+    {
+      "name": "防御机制",
+      "origin": "弗洛伊德（由安娜·弗洛伊德系统化）",
+      "source": null
+    }
+  ],
+  "analyzed_at": "2026-10-13"
+}

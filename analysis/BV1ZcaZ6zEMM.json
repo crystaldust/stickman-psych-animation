@@ -1,0 +1,82 @@
+{
+  "bvid": "BV1ZcaZ6zEMM",
+  "title": "很多人读得越多越难被打动，看得越多越容易挑剔，懂得越多越急着判断。你以为这是成熟？有时候只是你的世界正在闭合",
+  "summary": "懂得越多越挑剔，其实是「认知闭合」让世界变窄；品位只能评价世界，创造才能重新进入不确定性，所以要去创造。",
+  "themes": [
+    "创造",
+    "认知闭合",
+    "自我成长"
+  ],
+  "structure": [
+    {
+      "role": "hook",
+      "start": 0.0,
+      "text": "当你停止创造，你的才能就不再重要。你所拥有的只剩下品位，而品位会让你排斥他人，变得狭隘。所以，去创造。"
+    },
+    {
+      "role": "example",
+      "start": 11.0,
+      "text": "读的书越多，越难被一本书打动；电影看得越多，越容易挑剔剧情。你以为这是成熟？其实有时候，只是你的世界正在闭合。"
+    },
+    {
+      "role": "concept",
+      "start": 27.0,
+      "text": "心理学中有一个概念，叫认知闭合：人在面对模糊和不确定时，会渴望尽快得到一个明确答案。"
+    },
+    {
+      "role": "reframe",
+      "start": 47.0,
+      "text": "当一个人拥有的判断越来越多，他能看见的可能性反而越来越少。批判只需要标准，创造却必须面对未知。"
+    },
+    {
+      "role": "reframe",
+      "start": 82.0,
+      "text": "创造最大的意义，或许不是留下什么作品，而是它会迫使你重新进入不确定性。你不能永远站在岸上，你必须下水。"
+    },
+    {
+      "role": "closing",
+      "start": 122.0,
+      "text": "一个人真正衰老的时刻，也许不是身体开始退化，而是他终于确信，这个世界已经没有什么能改变我的看法了。"
+    }
+  ],
+  "claims": [
+    {
+      "id": "c1",
+      "quote": "当你停止创造，你的才能就不再重要。你所拥有的只剩下品位，而品位会裹挟你，让你排斥他人，变得狭隘。所以，去创造。",
+      "attributed_to": null,
+      "work": null,
+      "verdict": "no_attribution",
+      "original": "when you don't create things, you become defined by your tastes rather than ability. your tastes only narrow & exclude people. so create.",
+      "source": {
+        "author": "why the lucky stiff",
+        "title": "推文",
+        "locator": "约 2009 年 Twitter 推文，原推已随账号删除；转引自 Hacker News 2009-08-20 评论",
+        "url": "https://news.ycombinator.com/item?id=772703"
+      },
+      "notes": "视频未署名，但这是对程序员作家 why the lucky stiff（_why）一条推文的改写，开场直接借用而不注明。改写有出入：原句是「被品位而非能力所定义」，不是「才能不再重要」；原句没有「裹挟」。原推已删，只有 2009 年同时代的转引。"
+    },
+    {
+      "id": "c2",
+      "quote": "一个人真正需要警惕的，不是无知，而是过早地觉得自己已经知道。",
+      "attributed_to": null,
+      "work": null,
+      "verdict": "no_attribution",
+      "original": null,
+      "source": null,
+      "notes": "作者自己的总结。"
+    }
+  ],
+  "concepts": [
+    {
+      "name": "认知闭合需要",
+      "origin": "阿里·克鲁格兰斯基",
+      "source": {
+        "author": "阿里·克鲁格兰斯基",
+        "title": "心理的动机性闭合：抓住与冻结",
+        "locator": "Motivated Closing of the Mind: \"Seizing\" and \"Freezing\" (Kruglanski & Webster, Psychological Review, 1996)",
+        "url": null
+      }
+    }
+  ],
+  "analyzed_at": "2026-10-13"
+}

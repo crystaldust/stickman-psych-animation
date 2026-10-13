@@ -1,0 +1,87 @@
+{
+  "bvid": "BV11xaZ6pEZ5",
+  "title": "我们总被鼓励在亲密关系里毫无保留，做真实的自己。但为什么越过度坦诚，关系反而越快瓦解？",
+  "summary": "借齐泽克「幻想支撑现实」的观点，说明关系依赖双方的幻想构成的「第三空间」，过度坦诚会拆掉它。",
+  "themes": [
+    "亲密关系",
+    "精神分析",
+    "真诚与边界"
+  ],
+  "structure": [
+    {
+      "role": "hook",
+      "start": 0.0,
+      "text": "过度真诚，为什么反而会让关系破裂？"
+    },
+    {
+      "role": "concept",
+      "start": 22.0,
+      "text": "齐泽克在《意识形态的崇高客体》中，有一个有趣的观点，幻想不是现实的反面，幻想恰恰是你承受现实的唯一方式。"
+    },
+    {
+      "role": "example",
+      "start": 37.0,
+      "text": "即便对方天天说爱我，我也不能百分百确认这是真的。我们更多的是，选择相信。"
+    },
+    {
+      "role": "reframe",
+      "start": 56.0,
+      "text": "当我们幻想的时候，对方也同样在幻想，这就产生了第三空间……关系本身就是这个第三空间。"
+    },
+    {
+      "role": "reframe",
+      "start": 89.0,
+      "text": "过度坦诚，其实是一种强迫性的抢占行为，它要求把这个第三空间拆除。"
+    },
+    {
+      "role": "closing",
+      "start": 135.0,
+      "text": "这就是齐泽克意义上的幻想，不是现实的反面，而是现实的基础。"
+    }
+  ],
+  "claims": [
+    {
+      "id": "c1",
+      "quote": "幻想不是现实的反面，幻想恰恰是你承受现实的唯一方式。",
+      "attributed_to": "齐泽克",
+      "work": "《意识形态的崇高客体》",
+      "verdict": "paraphrase",
+      "original": "ideology is not a dreamlike illusion that we build to escape insupportable reality; in its basic dimension it is a fantasy-construction which serves as a support for our 'reality' itself",
+      "source": {
+        "author": "斯拉沃热·齐泽克",
+        "title": "意识形态的崇高客体",
+        "locator": "The Sublime Object of Ideology (Verso, 1989)，第一章「Ideological Fantasy」一节（页码据记忆，未核对原书）",
+        "url": "https://sites.cardiff.ac.uk/zizekcentre/slavoj-zizek-and-the-critique-of-ideology/"
+      },
+      "notes": "以「有一个观点」介绍，判为意译。齐泽克的意思是：幻想构成并撑起「现实」本身，人借这个现实逃避创伤性的「实在界」内核；不是「赤裸裸的现实太难受，所以要靠幻想才活得下去」。视频的「唯一方式」「必须依赖幻想才活得下去」是通俗化简化。original 为 source-hunter 凭记忆给出的英文段落，仅部分片段在卡迪夫大学齐泽克中心页面上核对过。"
+    },
+    {
+      "id": "c2",
+      "quote": "所谓两个人的关系，靠两个点直连是不可能的。它必须是三点的。两个人通过一个中介联系在一起，这就是关系。",
+      "attributed_to": null,
+      "work": null,
+      "verdict": "no_attribution",
+      "original": null,
+      "source": null,
+      "notes": "「第三空间」是视频作者对齐泽克和拉康（大他者、象征秩序作为中介）的自行发挥，不是某位理论家的术语。"
+    }
+  ],
+  "concepts": [
+    {
+      "name": "意识形态幻想",
+      "origin": "齐泽克",
+      "source": {
+        "author": "斯拉沃热·齐泽克",
+        "title": "意识形态的崇高客体",
+        "locator": "第一章",
+        "url": null
+      }
+    },
+    {
+      "name": "实在界",
+      "origin": "拉康",
+      "source": null
+    }
+  ],
+  "analyzed_at": "2026-10-13"
+}

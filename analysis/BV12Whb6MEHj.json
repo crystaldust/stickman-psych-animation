@@ -1,0 +1,87 @@
+{
+  "bvid": "BV12Whb6MEHj",
+  "title": "“你以为是他们天生强大，其实是他们天生没有人可以依赖”",
+  "summary": "从小「懂事」的孩子长大后过度独立，是求助长期无回应形成的「只能靠自己」的防御，还会带来情感漠视；真正的独立是能自己走，也允许别人陪。",
+  "themes": [
+    "独立",
+    "依恋",
+    "原生家庭"
+  ],
+  "structure": [
+    {
+      "role": "hook",
+      "start": 0.0,
+      "text": "过度独立其实是一种很严重的心理创伤，它源于只能靠自己的超强信念。"
+    },
+    {
+      "role": "example",
+      "start": 5.0,
+      "text": "小时候看起来懂事的孩子，生病了就自己扛，难过了就窝在被子里小声哭泣。你以为是他们天生强大，其实是他们天生没有人可以依赖。"
+    },
+    {
+      "role": "concept",
+      "start": 21.0,
+      "text": "心理学里有一个概念叫防御性独立……防御性独立更像是我不是不需要你，而是我不敢需要你。"
+    },
+    {
+      "role": "reframe",
+      "start": 55.0,
+      "text": "这种从小被迫的独立信念，还会滋生出情感漠视：因为自己淋过雨，感觉没什么，所以觉得别人也能够淋雨。"
+    },
+    {
+      "role": "reframe",
+      "start": 95.0,
+      "text": "试着问自己：我是真的不需要别人，还是我已经习惯了不期待别人？"
+    },
+    {
+      "role": "closing",
+      "start": 114.0,
+      "text": "你会慢慢发现，接受别人的爱并不意味着失去独立。"
+    }
+  ],
+  "claims": [
+    {
+      "id": "c1",
+      "quote": "过度独立其实是一种很严重的心理创伤……心理学里有一个概念叫防御性独立，它和真正的独立不太一样。防御性独立更像是我不是不需要你，而是我不敢需要你。",
+      "attributed_to": null,
+      "work": null,
+      "verdict": "no_attribution",
+      "original": "…are commonly self-sufficient people, proud of their independence and self-control, scornful of sentiment; tears they regard as weakness. … prolonged absence of grieving and its related condition of compulsive self-reliance.",
+      "source": {
+        "author": "约翰·鲍尔比",
+        "title": "依恋与丧失",
+        "locator": "Attachment and Loss, Vol. 3: Loss: Sadness and Depression (1980), ch. 9 \"Disordered Variants\"；第 2 卷《分离》(1973) ch. 21 讲安全依恋与真正的自立",
+        "url": "https://vdoc.pub/documents/loss-sadness-and-depression-attachment-and-loss-3ge9328indfg"
+      },
+      "notes": "以「心理学里有一个概念」引出，未署名。「防御性独立」不是正式术语，最接近的学术概念是鲍尔比的「强迫性自我依赖」，以及安斯沃思的回避型依恋、成人依恋中的「去激活策略」。「不敢需要你」是流行化概括，大意与鲍尔比相符。但「过度独立是一种很严重的心理创伤」没有学术依据：它不是诊断类别，最多说长期得不到回应可能促成这种防御模式。"
+    },
+    {
+      "id": "c2",
+      "quote": "有一句话是这样说的，因为自己淋过雨，所以给别人撑伞。",
+      "attributed_to": null,
+      "work": null,
+      "verdict": "no_attribution",
+      "original": null,
+      "source": null,
+      "notes": "中文网络流行语，查不到可考的最初来源（作家、歌词、影视、微博），只能作为无出处的说法引用。"
+    }
+  ],
+  "concepts": [
+    {
+      "name": "强迫性自我依赖",
+      "origin": "约翰·鲍尔比",
+      "source": {
+        "author": "约翰·鲍尔比",
+        "title": "依恋与丧失",
+        "locator": "第 3 卷《丧失》(1980) ch. 9",
+        "url": null
+      }
+    },
+    {
+      "name": "回避型依恋",
+      "origin": "玛丽·安斯沃思",
+      "source": null
+    }
+  ],
+  "analyzed_at": "2026-10-13"
+}

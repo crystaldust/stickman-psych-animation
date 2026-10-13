@@ -1,0 +1,82 @@
+{
+  "bvid": "BV1LQtG6PEbg",
+  "title": "“命运未必会主动成全你，但你可以亲手成全自己”",
+  "summary": "改变命运靠的不是偶然的贵人和机遇，而是经年累月的自我塑造；借萨特「存在先于本质」说明人在选择和行动中定义自己。",
+  "themes": [
+    "自我塑造",
+    "存在主义",
+    "成长"
+  ],
+  "structure": [
+    {
+      "role": "hook",
+      "start": 0.0,
+      "text": "如果你心里真觉得自己有点东西，那就更该凭着这股心气把自己活成想成为的样子。"
+    },
+    {
+      "role": "reframe",
+      "start": 16.0,
+      "text": "他们总以为人生的转机要等一位贵人、一场机遇。但真正改变命运的，往往是一个人经年累月对自己的塑造。"
+    },
+    {
+      "role": "concept",
+      "start": 31.0,
+      "text": "心理学里有个概念叫自我塑造……多数人最大的误区是把自己当成一件已经完工的作品。"
+    },
+    {
+      "role": "concept",
+      "start": 59.0,
+      "text": "萨特说存在先于本质，人是在一次次选择和行动中慢慢定义自己是谁。"
+    },
+    {
+      "role": "reframe",
+      "start": 97.0,
+      "text": "真正的自我塑造，不是出于对现在自己的厌恶，而是在接纳自己本来面目的基础上，一点点拓宽边界。"
+    },
+    {
+      "role": "closing",
+      "start": 159.0,
+      "text": "命运未必会主动成全你，但你可以亲手成全自己。"
+    }
+  ],
+  "claims": [
+    {
+      "id": "c1",
+      "quote": "萨特说存在先于本质，人并不是先带着某种注定的本质来到世上，再照着剧本活，而是在一次次选择和行动中慢慢定义自己是谁。",
+      "attributed_to": "萨特",
+      "work": null,
+      "verdict": "verbatim",
+      "original": "l'existence précède l'essence ; l'homme existe d'abord, se rencontre, surgit dans le monde, et il se définit après.",
+      "source": {
+        "author": "让-保罗·萨特",
+        "title": "存在主义是一种人道主义",
+        "locator": "L'existentialisme est un humanisme (1945 年演讲，1946 年出版)，前半部分论无神论存在主义",
+        "url": "https://www.marxists.org/reference/archive/sartre/works/exist/sartre.htm"
+      },
+      "notes": "「存在先于本质」是原话，后半句是对「人首先存在……然后才定义自己」「人只不过是他行动的总和」的忠实意译，「照着剧本活」是视频的修辞。英译本已核对，法文据通行版本。"
+    },
+    {
+      "id": "c2",
+      "quote": "心理学里有个概念叫自我塑造，他说，人完全可以通过持续调整自己的认知、行为和选择，一步步逼近理想中的自己。",
+      "attributed_to": null,
+      "work": null,
+      "verdict": "no_attribution",
+      "original": null,
+      "source": null,
+      "notes": "「自我塑造」不是有明确提出者的心理学术语，视频也没点名，按作者观点处理。"
+    }
+  ],
+  "concepts": [
+    {
+      "name": "存在先于本质",
+      "origin": "让-保罗·萨特",
+      "source": {
+        "author": "让-保罗·萨特",
+        "title": "存在主义是一种人道主义",
+        "locator": "L'existentialisme est un humanisme (1946)",
+        "url": null
+      }
+    }
+  ],
+  "analyzed_at": "2026-10-13"
+}

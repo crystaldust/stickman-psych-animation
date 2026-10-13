@@ -1,0 +1,61 @@
+{
+  "bvid": "BV12ubM6gESm",
+  "title": "“这五个问题，帮你筛出真正的朋友”",
+  "summary": "孤独也许不是缺陷而是更诚实的状态；用几个高标准问题（谁真正了解你、身败名裂谁还在、能向谁坦白关系裂痕和性的不安、谁接纳你愚蠢的一面）审视友谊，发现朋友很少也不必羞耻。",
+  "themes": [
+    "友谊",
+    "孤独",
+    "自我接纳"
+  ],
+  "structure": [
+    {
+      "role": "hook",
+      "start": 0.0,
+      "text": "你究竟有多少朋友？大多数人会下意识报出一个不小的数字，仿佛承认自己没什么朋友，就等于当众认领某种社交无能。"
+    },
+    {
+      "role": "reframe",
+      "start": 12.0,
+      "text": "假如孤独恰恰是一种更诚实、更富有思想深度的状态呢？"
+    },
+    {
+      "role": "example",
+      "start": 41.0,
+      "text": "一，你那些所谓的朋友，到底有多了解你？二，如果你因自己的过错身败名裂，谁还会站在你身边？"
+    },
+    {
+      "role": "example",
+      "start": 101.0,
+      "text": "你能和谁谈论性方面的不安与复杂？一位德高望重的法官，或许怀有某种与职业形象相悖的隐秘渴望。"
+    },
+    {
+      "role": "example",
+      "start": 135.0,
+      "text": "谁会喜欢你内心那愚蠢的一面？那个在深夜做蠢事的人，那个把咖啡洒在胸前的人。"
+    },
+    {
+      "role": "closing",
+      "start": 158.0,
+      "text": "我们终于可以清醒地、有准备地去寻找一段真正配得上友谊这两个字的关系。"
+    }
+  ],
+  "claims": [
+    {
+      "id": "c1",
+      "quote": "假如孤独恰恰是一种更诚实、更富有思想深度的状态呢？……下面是一场特别的测试……你那些所谓的朋友，到底有多了解你？",
+      "attributed_to": null,
+      "work": null,
+      "verdict": "no_attribution",
+      "original": "Loneliness (rightly investigated) should provide a sketch of our potential for friendship",
+      "source": {
+        "author": "The School of Life",
+        "title": "你有多孤独？一个测试",
+        "locator": "How Lonely Are You? A Test（官网文章，未署名）",
+        "url": "https://www.theschooloflife.com/article/how-lonely-are-you-a-test/"
+      },
+      "notes": "全篇未署名，高度疑似翻译改写自 The School of Life 的这篇文章：观点和第一题能对上（据搜索摘要），但官网拒绝抓取，后面几题（身败名裂、出轨念头、法官与海军军官、咖啡洒在胸前）没能逐题比对。需人工打开原文确认。"
+    }
+  ],
+  "concepts": [],
+  "analyzed_at": "2026-10-13"
+}

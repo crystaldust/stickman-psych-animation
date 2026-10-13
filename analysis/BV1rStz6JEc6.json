@@ -1,0 +1,82 @@
+{
+  "bvid": "BV1rStz6JEc6",
+  "title": "“真正困住你的，不是过去，而是那个不停回头的自己”",
+  "summary": "过去本身不存在，困住人的是对过去的反复重播即「思维反刍」；要区分情绪和事实，停止思考转向行动，用新经历覆盖旧记忆。",
+  "themes": [
+    "思维反刍",
+    "放下过去",
+    "情绪调节"
+  ],
+  "structure": [
+    {
+      "role": "hook",
+      "start": 0.0,
+      "text": "人总是被过去所困，但其实过去根本就不存在，真正存在的，是你此刻脑海里对过去一遍又一遍地重播。"
+    },
+    {
+      "role": "concept",
+      "start": 10.0,
+      "text": "心理学上有一个概念叫思维反刍，它是指把已经发生的事情在脑海里反复回放，不断分析，不断解释。"
+    },
+    {
+      "role": "reframe",
+      "start": 40.0,
+      "text": "大脑并不擅长区分真实经历和反复想象。你不是被过去伤害了一次，而是每天都在主动经历第二次、第三次。"
+    },
+    {
+      "role": "example",
+      "start": 92.0,
+      "text": "当你发现自己又开始陷入反刍的时候，试着停止思考，去行动，去接触新的人和事，去完成一场旅行。"
+    },
+    {
+      "role": "concept",
+      "start": 111.0,
+      "text": "叔本华说过，人最大的痛苦不是现实本身，而是意识不断放大现实。"
+    },
+    {
+      "role": "closing",
+      "start": 130.0,
+      "text": "真正困住你的从来不是过去，而是那个不停回头的自己。当你停止向过去索要答案，未来才会慢慢向你走来。"
+    }
+  ],
+  "claims": [
+    {
+      "id": "c1",
+      "quote": "人最大的痛苦不是现实本身，而是意识不断放大现实。",
+      "attributed_to": "叔本华",
+      "work": null,
+      "verdict": "misattributed",
+      "original": null,
+      "source": {
+        "author": "阿图尔·叔本华",
+        "title": "附录与补遗",
+        "locator": "第 1 卷《人生智慧箴言》第五章「劝诫与格言」第 12–13 条（最接近的观点）",
+        "url": "https://www.gutenberg.org/cache/epub/47406/pg47406.txt"
+      },
+      "notes": "以「叔本华说过」作原话呈现，但德文全文中没有对应原句，网上也无带出处的版本，应是托名改写。最接近的是第 13 条：在关乎祸福的事上要管住想象力，它会把不幸放大，把其可能性拉得比实际更近；并批评对旧日损失反复琢磨、按放大的尺度描绘。第 12 条劝人别去想已发生的不幸「本可以不这样」。可改写为「叔本华在《人生智慧箴言》里提醒，要管住想象力，因为它会把不幸放大」。"
+    },
+    {
+      "id": "c2",
+      "quote": "请记住一句话，真正困住你的从来不是过去，而是那个不停回头的自己。",
+      "attributed_to": null,
+      "work": null,
+      "verdict": "no_attribution",
+      "original": null,
+      "source": null,
+      "notes": "即视频标题，未署名，按作者自己的金句处理，未派 source-hunter。"
+    }
+  ],
+  "concepts": [
+    {
+      "name": "思维反刍",
+      "origin": "苏珊·诺伦-霍克西玛",
+      "source": {
+        "author": "苏珊·诺伦-霍克西玛",
+        "title": "抑郁发作时的反应及其对持续时间的影响",
+        "locator": "Responses to Depression and Their Effects on the Duration of Depressive Episodes, Journal of Abnormal Psychology 100(4) (1991)",
+        "url": null
+      }
+    }
+  ],
+  "analyzed_at": "2026-10-13"
+}

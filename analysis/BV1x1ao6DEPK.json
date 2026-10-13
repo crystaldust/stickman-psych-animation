@@ -1,0 +1,98 @@
+{
+  "bvid": "BV1x1ao6DEPK",
+  "title": "纯爱到底是极致的忠贞，还是一种隐秘的自我受虐？",
+  "summary": "「纯爱」不是走向真实的人，而是借一个遥不可及的幻影完成自恋式的受难仪式；对象必须遥远才能保住完美，单恋的痛苦反而是最安全的防御。",
+  "themes": [
+    "纯爱",
+    "自恋",
+    "理想化",
+    "精神分析"
+  ],
+  "structure": [
+    {
+      "role": "hook",
+      "start": 0.0,
+      "text": "纯爱到底是极致的忠贞，还是一种隐秘的自我受虐？"
+    },
+    {
+      "role": "concept",
+      "start": 15.0,
+      "text": "弗洛伊德在《论自恋》里指出，人情感中最隐秘的诡计，就是把对自我的狂热崇拜伪装成对另一个人的极度奉献。"
+    },
+    {
+      "role": "reframe",
+      "start": 34.0,
+      "text": "当一个人在关系里极端自我压抑、极端奉献时，他的潜意识其实正在经历一场隐秘的自恋狂欢。"
+    },
+    {
+      "role": "reframe",
+      "start": 70.0,
+      "text": "纯爱之所以能维持绝对圣洁，核心前提就是对方必须遥远，不可企及，甚至永远拒绝。"
+    },
+    {
+      "role": "concept",
+      "start": 103.0,
+      "text": "斯汤达在《论爱情》里提出的结晶理论：爱情像一根光秃秃的树枝被扔进盐矿，时间一久，枝上结满晶莹剔透的结晶。"
+    },
+    {
+      "role": "closing",
+      "start": 137.0,
+      "text": "纯爱从来不是通往另一个灵魂的桥梁，而是一面照见自己崇高幻觉的单向镜。"
+    }
+  ],
+  "claims": [
+    {
+      "id": "c1",
+      "quote": "人情感中最隐秘的诡计，就是把对自我的狂热崇拜伪装成对另一个人的极度奉献。",
+      "attributed_to": "弗洛伊德",
+      "work": "论自恋",
+      "verdict": "misattributed",
+      "original": null,
+      "source": {
+        "author": "西格蒙德·弗洛伊德",
+        "title": "论自恋：一篇导论",
+        "locator": "Zur Einführung des Narzißmus (1914)，第 II 节（对象选择、性高估）与第 III 节（自我理想）",
+        "url": "https://en.wikipedia.org/wiki/On_Narcissism"
+      },
+      "notes": "以格言形式、「弗洛伊德在《论自恋》里指出」引出，听众会当作原话，但书中没有这句，也没有「伪装/揭穿」的说法。最接近的观点：依附型对象爱中的性高估源于儿童原初自恋向对象的转移；恋爱时对象被抬高为理想，替代未实现的自我理想。弗洛伊德反而认为这种恋爱会让自我的力比多贫乏，并未把奉献一概说成自恋的伪装，视频推得更极端。思想上更接近《群体心理学与自我分析》第八章「恋爱与催眠」。最接近段落据 source-hunter 对标准版英译的记忆，未核对原文。"
+    },
+    {
+      "id": "c2",
+      "quote": "斯汤达在《论爱情》里提出的结晶理论……爱情像一根光秃秃的树枝被扔进盐矿，时间一久，枝上结满晶莹剔透的结晶，变得光彩夺目。",
+      "attributed_to": "司汤达",
+      "work": "论爱情",
+      "verdict": "paraphrase",
+      "original": "Aux mines de sel de Salzbourg, on jette dans les profondeurs abandonnées de la mine un rameau d'arbre effeuillé par l'hiver; deux ou trois mois après, on le retire couvert de cristallisations brillantes … on ne peut plus reconnaître le rameau primitif.",
+      "source": {
+        "author": "司汤达",
+        "title": "论爱情",
+        "locator": "De l'amour (1822)，第一卷第二章「论爱情的诞生」第 5 阶段；第六章「萨尔茨堡的树枝」展开此喻",
+        "url": "https://www.gutenberg.org/cache/epub/60882/pg60882-images.html"
+      },
+      "notes": "比喻复述忠实。司汤达确实认为怀疑和不确定会引发更强的「第二次结晶」，但那是对「她爱不爱我」的怀疑，不是赞美长期求而不得；「爱而不得让对方永远在神坛上」「纯爱者爱的是自己包上去的外壳」是视频的引申。"
+    }
+  ],
+  "concepts": [
+    {
+      "name": "结晶作用",
+      "origin": "司汤达",
+      "source": {
+        "author": "司汤达",
+        "title": "论爱情",
+        "locator": "De l'amour (1822)，第一卷第二章",
+        "url": null
+      }
+    },
+    {
+      "name": "自恋",
+      "origin": "西格蒙德·弗洛伊德",
+      "source": {
+        "author": "西格蒙德·弗洛伊德",
+        "title": "论自恋：一篇导论",
+        "locator": "Zur Einführung des Narzißmus (1914)",
+        "url": null
+      }
+    }
+  ],
+  "analyzed_at": "2026-10-13"
+}

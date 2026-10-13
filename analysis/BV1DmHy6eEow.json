@@ -1,0 +1,67 @@
+{
+  "bvid": "BV1DmHy6eEow",
+  "title": "人终究要明白，当你一个人熬过那些最糟糕的日子，你就真的不会再那么在意，谁还愿意留在你的生命里",
+  "summary": "内心的平静不是不再失去，而是确认自己失去之后仍能把自己接住；借「情绪调节」说明情绪经过你但不定义你。",
+  "themes": [
+    "安全感",
+    "情绪调节",
+    "自我成长"
+  ],
+  "structure": [
+    {
+      "role": "hook",
+      "start": 0.0,
+      "text": "当你一个人熬过那些最糟糕的日子，你就真的不会再那么在意，谁还愿意留在你的生命里。"
+    },
+    {
+      "role": "reframe",
+      "start": 7.0,
+      "text": "真正的平静从来不是身边终于没有了麻烦，而是你终于确认，哪怕失去很多东西，你依然有能力把自己接住。"
+    },
+    {
+      "role": "example",
+      "start": 16.0,
+      "text": "年轻的时候，我们太容易把安全感寄存在别人身上……情绪像一间没有门锁的房子，任何人路过，都能进来翻动几件东西。"
+    },
+    {
+      "role": "concept",
+      "start": 49.0,
+      "text": "心理学里有一个很重要的能力，叫情绪调节。它不是让自己永远没有负面情绪，而是当恐惧、失望和悲伤出现时，你不会立刻被它们带走。"
+    },
+    {
+      "role": "reframe",
+      "start": 98.0,
+      "text": "很多人以为，平静是一种性格，其实平静更像一种劫后余生的能力。"
+    },
+    {
+      "role": "closing",
+      "start": 123.0,
+      "text": "真正的平静，不是这个世界终于对你温柔了，而是即使世界偶尔粗暴，你也不再因此失去自己。"
+    }
+  ],
+  "claims": [
+    {
+      "id": "c1",
+      "quote": "真正折磨人的往往不是失去本身，而是你曾经相信，没有它，我就无法继续生活。",
+      "attributed_to": null,
+      "work": null,
+      "verdict": "no_attribution",
+      "original": null,
+      "source": null,
+      "notes": "作者自己的总结，未声称出自任何人。文案中「情绪条件」是转写错误，应为「情绪调节」。"
+    }
+  ],
+  "concepts": [
+    {
+      "name": "情绪调节",
+      "origin": "詹姆斯·格罗斯",
+      "source": {
+        "author": "詹姆斯·格罗斯",
+        "title": "情绪调节的新兴领域：整合性综述",
+        "locator": "The Emerging Field of Emotion Regulation: An Integrative Review, Review of General Psychology (1998)",
+        "url": null
+      }
+    }
+  ],
+  "analyzed_at": "2026-10-13"
+}

@@ -1,0 +1,112 @@
+{
+  "bvid": "BV1tvtD6bEci",
+  "title": "“加缪说真正严肃的哲学问题只有一个”",
+  "summary": "从加缪「唯一严肃的哲学问题是自杀」出发，分别从心理学、存在主义、虚无主义和社会学角度讨论「想开还是想不开」。",
+  "themes": [
+    "存在主义",
+    "心理健康",
+    "自杀议题"
+  ],
+  "structure": [
+    {
+      "role": "hook",
+      "start": 0.0,
+      "text": "自杀到底是想开了还是想不开？加缪说过真正严肃的哲学问题只有一个，那就是自杀。"
+    },
+    {
+      "role": "concept",
+      "start": 17.0,
+      "text": "心理学上通常分两种情况来说……就像网上很火的那句话，我想结束的是痛苦，不是生命。"
+    },
+    {
+      "role": "concept",
+      "start": 60.0,
+      "text": "到了哲学层面，又分成了两派……存在主义坚持认为，这还是想不开。"
+    },
+    {
+      "role": "reframe",
+      "start": 99.0,
+      "text": "可要是从社会学的角度望过去，那压根就没什么想不想得开这回事，这几乎都是他杀。"
+    },
+    {
+      "role": "closing",
+      "start": 128.0,
+      "text": "最后，还是献上尼采那句话，自杀的念头是一种安慰……但熬过去才拥有改变的可能。"
+    }
+  ],
+  "claims": [
+    {
+      "id": "c1",
+      "quote": "真正严肃的哲学问题只有一个，那就是自杀。",
+      "attributed_to": "加缪",
+      "work": null,
+      "verdict": "verbatim",
+      "original": "Il n'y a qu'un problème philosophique vraiment sérieux : c'est le suicide.",
+      "source": {
+        "author": "阿尔贝·加缪",
+        "title": "西西弗神话",
+        "locator": "Le Mythe de Sisyphe (1942)，「荒诞推理」章「荒诞与自杀」节首句",
+        "url": "https://revoltlib.com/anarchism/the-myth-of-sisyphus-and-other-essays-camus-albert/part-1-the-myth-of-sisyphus/view.php"
+      },
+      "notes": "在 Justin O'Brien 英译本中核对过首句：There is but one truly serious philosophical problem, and that is suicide. 法文原句来自搜索结果，未打开法文版。"
+    },
+    {
+      "id": "c2",
+      "quote": "我想结束的是痛苦，不是生命。",
+      "attributed_to": null,
+      "work": null,
+      "verdict": "no_attribution",
+      "original": null,
+      "source": null,
+      "notes": "视频称是「网上很火的那句话」，未署名。对应英文心理健康圈常见说法 \"I don't want to die, I just want the pain to stop\"，最早出处不明。学术上最接近的是自杀学家施奈德曼（Edwin Shneidman）《The Suicidal Mind》（1996）的「心理痛苦」（psychache）理论；可以引用他的观点，但不能说这句流行语是他的原话。"
+    },
+    {
+      "id": "c3",
+      "quote": "自杀的念头是一种安慰，但能帮我们熬过无数难熬的夜晚，但熬过去才拥有改变的可能。",
+      "attributed_to": "尼采",
+      "work": null,
+      "verdict": "misattributed",
+      "original": "Der Gedanke an den Selbstmord ist ein starkes Trostmittel: mit ihm kommt man gut über manche böse Nacht hinweg.",
+      "source": {
+        "author": "弗里德里希·尼采",
+        "title": "善恶的彼岸",
+        "locator": "Jenseits von Gut und Böse (1886)，第四章「格言与插曲」第 157 条",
+        "url": "https://www.gutenberg.org/cache/epub/4363/pg4363.txt"
+      },
+      "notes": "前半句是真的（古腾堡 Zimmern 英译本核对过：The thought of suicide is a great consolation: by means of it one gets successfully through many a bad night.）。后半句「但熬过去才拥有改变的可能」不是尼采说的，原格言到「夜晚」就结束。视频把整句当成尼采原话，判为误引；只引前半句可算原话。另：原文是「许多」夜晚，不是「无数」。德文原句据 source-hunter 记忆。"
+    },
+    {
+      "id": "c4",
+      "quote": "真正的想开，是你清清楚楚看透了生活的苦，看明白了它的荒诞，但却依然选择站起身来，继续往前走，亲手给自己创造一点意义。",
+      "attributed_to": "存在主义",
+      "work": null,
+      "verdict": "unverified",
+      "original": null,
+      "source": null,
+      "notes": "归于「存在主义那帮人」的泛泛概括，大意接近加缪《西西弗神话》对荒诞的反抗，但不是任何人的原话，本批未派 source-hunter 核查。"
+    }
+  ],
+  "concepts": [
+    {
+      "name": "荒诞",
+      "origin": "加缪",
+      "source": {
+        "author": "阿尔贝·加缪",
+        "title": "西西弗神话",
+        "locator": null,
+        "url": null
+      }
+    },
+    {
+      "name": "心理痛苦（psychache）",
+      "origin": "施奈德曼",
+      "source": {
+        "author": "埃德温·施奈德曼",
+        "title": "自杀心理",
+        "locator": "The Suicidal Mind (1996)",
+        "url": null
+      }
+    }
+  ],
+  "analyzed_at": "2026-10-13"
+}

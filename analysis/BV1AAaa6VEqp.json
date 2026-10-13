@@ -1,0 +1,123 @@
+{
+  "bvid": "BV1AAaa6VEqp",
+  "title": "“为什么从小缺爱的人，谁陪在他身边，他就爱谁？”",
+  "summary": "用弗洛伊德的依附型对象选择和拉康「欲望是他者的欲望」，解释缺爱者把陪伴本身当作爱的对象。",
+  "themes": [
+    "亲密关系",
+    "原生家庭",
+    "精神分析",
+    "依恋"
+  ],
+  "structure": [
+    {
+      "role": "hook",
+      "start": 0.0,
+      "text": "为什么从小缺爱的人，谁陪在他身边，他就爱谁。"
+    },
+    {
+      "role": "concept",
+      "start": 4.0,
+      "text": "弗洛伊德在《性学三论》中提出了对象选择的概念……一种是依附型，另一种是自恋型。"
+    },
+    {
+      "role": "reframe",
+      "start": 24.0,
+      "text": "如果早期的照料本身是不稳定的……任何持续在场的陪伴者都可能被他的无意识迅速填充进那个空洞的位置。"
+    },
+    {
+      "role": "concept",
+      "start": 41.0,
+      "text": "弗洛伊德有一句原话，在爱中，自我变得贫乏，对象变得崇高。"
+    },
+    {
+      "role": "concept",
+      "start": 75.0,
+      "text": "拉康认为，人的欲望永远不是对某个具体对象的欲望，而是对他者欲望的欲望。"
+    },
+    {
+      "role": "closing",
+      "start": 124.0,
+      "text": "当你不再需要一个人来证明自己存在，你才可能看见他本来的样子，你才可能爱一个具体的人。"
+    }
+  ],
+  "claims": [
+    {
+      "id": "c1",
+      "quote": "人的爱与对象选择存在两种模式，一种是依附型，以早期照料者为原型，另一种是自恋型，以自我为原型。",
+      "attributed_to": "弗洛伊德",
+      "work": "《性学三论》",
+      "verdict": "paraphrase",
+      "original": "We say that a human being has originally two sexual objects—himself and the woman who nurses him",
+      "source": {
+        "author": "西格蒙德·弗洛伊德",
+        "title": "论自恋：一篇导论",
+        "locator": "Zur Einführung des Narzißmus (1914)，第二节；标准版第 14 卷 pp. 87–90",
+        "url": "https://blogs.uoregon.edu/autismhistoryproject/?p=1235"
+      },
+      "notes": "以「他指出」介绍，观点属实，判为意译。但作品不准确：这一区分系统出现在《论自恋》（1914）第二节，1905 年初版《性学三论》中没有，只在 1915 年给《性学三论》第三篇补的脚注里提到。「缺爱的人固着在依附型」是视频自己的推论，弗洛伊德没有这样说。original 的英文据 source-hunter 记忆，未逐字核对。"
+    },
+    {
+      "id": "c2",
+      "quote": "在爱中，自我变得贫乏，对象变得崇高。",
+      "attributed_to": "弗洛伊德",
+      "work": null,
+      "verdict": "verbatim",
+      "original": "the ego becomes more and more unassuming and modest, and the object more and more sublime and precious",
+      "source": {
+        "author": "西格蒙德·弗洛伊德",
+        "title": "群体心理学与自我分析",
+        "locator": "Massenpsychologie und Ich-Analyse (1921)，第八章「恋爱与催眠」",
+        "url": "https://gutenberg.org/files/35877/35877-h/35877-h.htm"
+      },
+      "notes": "英译原句在古腾堡计划全文中核对过；同章还有「自我变得贫乏，把自己交给了对象」的说法。中文是忠实的意译式翻译，判为原话。注意出处是《群体心理学与自我分析》，不是《论自恋》。"
+    },
+    {
+      "id": "c3",
+      "quote": "人的欲望永远不是对某个具体对象的欲望，而是对他者欲望的欲望。",
+      "attributed_to": "拉康",
+      "work": null,
+      "verdict": "paraphrase",
+      "original": "le désir de l'homme est le désir de l'Autre",
+      "source": {
+        "author": "雅克·拉康",
+        "title": "主体的颠覆与弗洛伊德无意识中的欲望辩证法",
+        "locator": "Subversion du sujet et dialectique du désir（收入《Écrits》，Seuil 1966，p. 815）",
+        "url": "https://cahiers.kingston.ac.uk/concepts/other.html"
+      },
+      "notes": "以「拉康认为」介绍，判为意译。公式属实，页码经金斯顿大学《Cahiers pour l'Analyse》概念页核对，未看原书。法文的 de 有双重含义，也可理解为「欲望他者所欲望的」或「作为他者去欲望」，视频只取了一种读法；「永远不是对具体对象的欲望」是视频自己的概括。"
+    }
+  ],
+  "concepts": [
+    {
+      "name": "依附型对象选择",
+      "origin": "弗洛伊德",
+      "source": {
+        "author": "西格蒙德·弗洛伊德",
+        "title": "论自恋：一篇导论",
+        "locator": "第二节",
+        "url": null
+      }
+    },
+    {
+      "name": "自恋型对象选择",
+      "origin": "弗洛伊德",
+      "source": {
+        "author": "西格蒙德·弗洛伊德",
+        "title": "论自恋：一篇导论",
+        "locator": "第二节",
+        "url": null
+      }
+    },
+    {
+      "name": "大他者的欲望",
+      "origin": "拉康",
+      "source": {
+        "author": "雅克·拉康",
+        "title": "主体的颠覆与弗洛伊德无意识中的欲望辩证法",
+        "locator": "《Écrits》p. 815",
+        "url": null
+      }
+    }
+  ],
+  "analyzed_at": "2026-10-13"
+}

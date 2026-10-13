@@ -1,0 +1,51 @@
+{
+  "bvid": "BV1CSWXzAEys",
+  "title": "不要太急着去谈一场恋爱。就算身边的人都牵着手，也别因此感到慌张。",
+  "summary": "感情不是比速度的游戏，不要为填补空白随便找人；单身是自我修炼的黄金期，先成为值得被爱的自己。",
+  "themes": [
+    "单身",
+    "恋爱观",
+    "自我成长"
+  ],
+  "structure": [
+    {
+      "role": "hook",
+      "start": 0.0,
+      "text": "不要太急着去谈一场恋爱。就算身边的人都牵着手，也别因此感到慌张。"
+    },
+    {
+      "role": "reframe",
+      "start": 6.0,
+      "text": "感情这件事，从来不是比速度的游戏。太快开始的，多半也会太快结束。"
+    },
+    {
+      "role": "reframe",
+      "start": 21.0,
+      "text": "真正的爱，从来不是想要有谁，而是刚好是你。"
+    },
+    {
+      "role": "example",
+      "start": 32.0,
+      "text": "电影一个人看也有趣，火锅一个人吃也温暖，你可以一个人去旅行、读书、成长。"
+    },
+    {
+      "role": "closing",
+      "start": 56.0,
+      "text": "所以，不必着急。在遇到他之前，先成为那个值得被爱的自己。"
+    }
+  ],
+  "claims": [
+    {
+      "id": "c1",
+      "quote": "真正的爱，从来不是想要有谁，而是刚好是你。",
+      "attributed_to": null,
+      "work": null,
+      "verdict": "no_attribution",
+      "original": null,
+      "source": null,
+      "notes": "情感语录式表达，未署名，按作者自己的观点处理，未派 source-hunter。全篇没有引用和概念。"
+    }
+  ],
+  "concepts": [],
+  "analyzed_at": "2026-10-13"
+}

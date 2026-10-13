@@ -1,0 +1,98 @@
+{
+  "bvid": "BV1c7aL6fE6K",
+  "title": "“为什么你越无聊，反而越接近最高形式的幸福？”",
+  "summary": "把幸福当目标会让人陷入永恒的追逐；无聊暴露出消费社会「必须享受」的超我命令，只有对这个命令说不，无聊才会变成宁静的「减法幸福」。",
+  "themes": [
+    "幸福",
+    "无聊",
+    "欲望",
+    "消费社会"
+  ],
+  "structure": [
+    {
+      "role": "hook",
+      "start": 0.0,
+      "text": "为什么你越无聊，反而越接近最高形式的幸福？追求幸福永远得不到幸福，真正的幸福只在无聊时显现。"
+    },
+    {
+      "role": "reframe",
+      "start": 9.0,
+      "text": "当你把幸福当成目标，就意味着一切不幸福都与你为敌，这不就陷入永恒的战争状态吗？无聊能让这种战争停止。"
+    },
+    {
+      "role": "concept",
+      "start": 39.0,
+      "text": "叔本华说过，无聊是人生最大的幸福，闲暇才是人生的精华。"
+    },
+    {
+      "role": "reframe",
+      "start": 47.0,
+      "text": "无聊并不宁静，它有坐立难安的急迫。从精神分析看，减去的只是欲望的对象，不是欲望本身。"
+    },
+    {
+      "role": "concept",
+      "start": 98.0,
+      "text": "按拉康、齐泽克的体系，这种强迫来自消费社会：我们不是被禁止享受，而是被要求必须享受。"
+    },
+    {
+      "role": "closing",
+      "start": 152.0,
+      "text": "这也是伊壁鸠鲁和叔本华式减法幸福的真正含义：我们必须否定「必须幸福」，幸福才会真正出现。"
+    }
+  ],
+  "claims": [
+    {
+      "id": "c1",
+      "quote": "无聊是人生最大的幸福，闲暇才是人生的精华。",
+      "attributed_to": "叔本华",
+      "work": null,
+      "verdict": "misattributed",
+      "original": "Der allgemeinste Überblick zeigt uns, als die beiden Feinde des menschlichen Glückes, den Schmerz und die Langeweile. / … die freie Muße die Blüte, oder vielmehr die Frucht des Daseins eines jeden ist, indem nur sie ihn in den Besitz seines eigenen Selbst einsetzt.",
+      "source": {
+        "author": "阿图尔·叔本华",
+        "title": "附录与补遗",
+        "locator": "第 1 卷《人生智慧箴言》（Aphorismen zur Lebensweisheit, 1851）第二章「论人的自身」",
+        "url": "https://www.gutenberg.org/cache/epub/47406/pg47406.txt"
+      },
+      "notes": "以「叔本华说过」作原话呈现，是一真一假拼接。前半句与原意相反：叔本华明说痛苦和无聊是人类幸福的两大敌人。后半句有出处：自由的闲暇是每个人存在的花朵，更确切地说是果实；但他接着说，对精神贫乏的人，闲暇反而会变成无聊和折磨。据 Project Gutenberg 德文全文核实。"
+    },
+    {
+      "id": "c2",
+      "quote": "我们现在不是被禁止享受，而是被要求必须享受。我们必须享受，必须追求幸福，必须好好对待自己……在这种淫荡的超我命令下，无聊变成了时代的症候。",
+      "attributed_to": "拉康、齐泽克",
+      "work": null,
+      "verdict": "paraphrase",
+      "original": "we are bombarded from all sides by different versions of the injunction 'Enjoy!' … (enjoyment) effectively functions as a strange ethical duty",
+      "source": {
+        "author": "斯拉沃热·齐泽克",
+        "title": "如何阅读拉康",
+        "locator": "How to Read Lacan (2006), p. 104",
+        "url": "https://thedangerousmaybe.substack.com/p/lacan-and-zizeks-concept-of-the-superego"
+      },
+      "notes": "以「按拉康、齐泽克的体系」作观点介绍，判意译。理论源头是拉康研讨班第二十期《再来一次》（Encore, 1972–73）第一讲：「除了超我，没有什么能强迫人享乐。超我是享乐的命令——享受！」（经二手文献转引）。「淫荡的超我」见齐泽克《享乐的转移》p. 61。但「无聊变成了时代的症候」不是拉康或齐泽克的说法，是视频自己的引申。"
+    }
+  ],
+  "concepts": [
+    {
+      "name": "超我的享乐命令",
+      "origin": "雅克·拉康",
+      "source": {
+        "author": "雅克·拉康",
+        "title": "研讨班第二十期：再来一次",
+        "locator": "Le Séminaire XX: Encore (1972–73)，第一讲；Fink 英译本 p. 3",
+        "url": null
+      }
+    },
+    {
+      "name": "宁静（ataraxia，减法式幸福）",
+      "origin": "伊壁鸠鲁",
+      "source": {
+        "author": "伊壁鸠鲁",
+        "title": "致美诺寇的信",
+        "locator": "Letter to Menoeceus，见第欧根尼·拉尔修《名哲言行录》第 10 卷",
+        "url": null
+      }
+    }
+  ],
+  "analyzed_at": "2026-10-13"
+}

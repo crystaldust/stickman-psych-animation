@@ -1,0 +1,51 @@
+{
+  "bvid": "BV1f7e56dExj",
+  "title": "“同样是单身，为什么有人自在，有人抓狂？”",
+  "summary": "单身的人分自在型和抓狂型，差别在于赋予单身的意义；根源在童年是否被稳稳地爱过——值不值得被爱和有没有人爱是两码事。",
+  "themes": [
+    "单身",
+    "自我价值感",
+    "原生家庭"
+  ],
+  "structure": [
+    {
+      "role": "hook",
+      "start": 0.0,
+      "text": "这世上单身的人大概分两种，一种自在型，一种抓狂型。"
+    },
+    {
+      "role": "example",
+      "start": 4.0,
+      "text": "自在型的人有朋友、有爱好，交友软件经常一整周都不打开；抓狂型能注册的软件全注册，周末一天赶两三场约会。"
+    },
+    {
+      "role": "reframe",
+      "start": 59.0,
+      "text": "同样是单身，为什么有人云淡风轻，有人兵荒马乱？说到底，是对单身这件事赋予的意义不同。"
+    },
+    {
+      "role": "reframe",
+      "start": 115.0,
+      "text": "答案常常来自童年。我们今天怎么看自己，不过是早年被人怎么看过的延续。"
+    },
+    {
+      "role": "closing",
+      "start": 164.0,
+      "text": "好的养育里，有件事特别重要，让孩子明白，你值不值得被爱，和你有没有人爱，是两码事。"
+    }
+  ],
+  "claims": [
+    {
+      "id": "c1",
+      "quote": "我们今天怎么看自己，不过是早年被人怎么看过的延续……这是一种特权，一种奢侈，也是我们都该为自己争取的状态。",
+      "attributed_to": null,
+      "work": null,
+      "verdict": "no_attribution",
+      "original": null,
+      "source": null,
+      "notes": "全篇未署名。文风和观点很像 The School of Life（阿兰·德波顿），主题相近的有 Why Only the Happy Single Find True Love、The Secrets of a Privileged Childhood 等，但官网无法抓取，没能找到对应原文，不能当作其原话引用。"
+    }
+  ],
+  "concepts": [],
+  "analyzed_at": "2026-10-13"
+}

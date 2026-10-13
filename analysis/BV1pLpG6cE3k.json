@@ -1,0 +1,107 @@
+{
+  "bvid": "BV1pLpG6cE3k",
+  "title": "我们总幻想一种爱：不因为任何具体原因喜欢我，但必须喜欢我。听起来纯粹，其实是一种暴力",
+  "summary": "「无条件地爱我本身」的幻想是一种暴力要求，但真正的爱本身就是暴力事件：它把偶然相遇变成不可撤销的命运，双方交出的不是优点而是匮乏。",
+  "themes": [
+    "亲密关系",
+    "爱的本质",
+    "精神分析"
+  ],
+  "structure": [
+    {
+      "role": "hook",
+      "start": 0.0,
+      "text": "纯粹精神之爱为什么反而是一种暴力？你不能因为任何具体原因喜欢我，但你又必须喜欢我。"
+    },
+    {
+      "role": "example",
+      "start": 11.0,
+      "text": "男人幻想自己一无所有仍有女人爱他本身，所以小说里的富豪总装成穷光蛋；女人幻想男人爱的是她的内在。"
+    },
+    {
+      "role": "reframe",
+      "start": 35.0,
+      "text": "因为人们知道爱应是永恒的，但世上好像没什么不变。财产是身外之物，容貌注定衰老。"
+    },
+    {
+      "role": "concept",
+      "start": 87.0,
+      "text": "就像齐泽克在《事件》里说的，爱是一个暴力事件，它把偶然相遇，转换为绝对必然。"
+    },
+    {
+      "role": "reframe",
+      "start": 103.0,
+      "text": "我们常疑问对方到底喜欢我什么，根本原因是你也不知道自己是什么。"
+    },
+    {
+      "role": "concept",
+      "start": 131.0,
+      "text": "拉康说，爱就是给出自己没有的东西。真正的爱，你给对方的不是优点，而是匮乏。"
+    },
+    {
+      "role": "closing",
+      "start": 142.0,
+      "text": "你要在余生里，无根据、不理性地，为了一个不那么完美的人，对抗世界。"
+    }
+  ],
+  "claims": [
+    {
+      "id": "c1",
+      "quote": "爱是一个暴力事件。它把偶然相遇，转换为绝对必然。",
+      "attributed_to": "齐泽克",
+      "work": "事件",
+      "verdict": "misattributed",
+      "original": null,
+      "source": {
+        "author": "斯拉沃热·齐泽克",
+        "title": "事件",
+        "locator": "Event: A Philosophical Journey Through a Concept (2014), p. 2（最接近的段落，二手转引）",
+        "url": "https://samsmart.substack.com/p/could-a-person-whos-crashing-out"
+      },
+      "notes": "以「齐泽克在《事件》里说的」作原话呈现，但书中查不到这句。书里最接近的是第 2 页：我爱上她并没有确切理由，是因为已经爱她，她的嘴唇等才吸引我——事件回溯性地制造自己的原因，并没有说爱是「暴力事件」。「爱是暴力的」见于齐泽克口头访谈（仅二手转述）。「从偶然到命运」出自阿兰·巴迪欧《爱的多重奏》：\"The declaration of love marks the transition from chance to destiny.\" 视频是把两人的说法拼起来挂到《事件》名下。未拿到《事件》全文。"
+    },
+    {
+      "id": "c2",
+      "quote": "拉康说，爱就是给出自己没有的东西。",
+      "attributed_to": "拉康",
+      "work": null,
+      "verdict": "verbatim",
+      "original": "L'amour, c'est donner ce qu'on n'a pas.",
+      "source": {
+        "author": "雅克·拉康",
+        "title": "研讨班第十二期：精神分析的关键问题",
+        "locator": "Le Séminaire XII (1964–1965)，1965 年 3 月 17 日讲；前半句也见于研讨班第五、第八期",
+        "url": "https://www.hebdo-blog.fr/deux-mi-dire-qui-ne-se-recouvrent-pas/"
+      },
+      "notes": "沿用 BV1HJer6gEa2 的核实结果，本次未重新派 source-hunter。这里只引了前半句，忠实。完整句是「把自己没有的东西给一个不想要它的人」。"
+    },
+    {
+      "id": "c3",
+      "quote": "真正的爱，你给对方的不是优点，而是匮乏。同时，对方也把匮乏的自己展示给你。",
+      "attributed_to": null,
+      "work": null,
+      "verdict": "no_attribution",
+      "original": null,
+      "source": null,
+      "notes": "作者对拉康那句话的引申，未单独署名。"
+    }
+  ],
+  "concepts": [
+    {
+      "name": "事件",
+      "origin": "斯拉沃热·齐泽克（承自阿兰·巴迪欧）",
+      "source": {
+        "author": "斯拉沃热·齐泽克",
+        "title": "事件",
+        "locator": "Event: A Philosophical Journey Through a Concept (2014)",
+        "url": null
+      }
+    },
+    {
+      "name": "匮乏",
+      "origin": "雅克·拉康",
+      "source": null
+    }
+  ],
+  "analyzed_at": "2026-10-13"
+}

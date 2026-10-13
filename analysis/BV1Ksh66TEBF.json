@@ -1,0 +1,67 @@
+{
+  "bvid": "BV1Ksh66TEBF",
+  "title": "“为什么现实越压抑的人，越容易沉浸在幻想里？”",
+  "summary": "现实压抑的人靠可控的幻想获得低成本满足，幻想提前给了「拥有的感觉」反而让人迟迟不行动；出路是追问幻想在满足什么，并把一小部分带回现实。",
+  "themes": [
+    "幻想",
+    "逃避",
+    "自我成长"
+  ],
+  "structure": [
+    {
+      "role": "hook",
+      "start": 0.0,
+      "text": "为什么现实越压抑的人越容易沉浸在幻想里？因为他们会在脑子里构建另一个世界。"
+    },
+    {
+      "role": "concept",
+      "start": 13.0,
+      "text": "心理学中，这种通过沉浸式幻想来暂时逃离现实的状态，可以用幻想解离来理解。它和普通的白日梦不太一样。"
+    },
+    {
+      "role": "reframe",
+      "start": 32.0,
+      "text": "幻想里有一个现实永远无法保证的东西：可控。在脑海里，你可以决定故事怎么发展。"
+    },
+    {
+      "role": "reframe",
+      "start": 49.0,
+      "text": "幻想里的掌声来得太快，现实里的成长却需要很长时间。幻想已经提前给了你一点拥有它的感觉。"
+    },
+    {
+      "role": "example",
+      "start": 85.0,
+      "text": "当你再次发现自己沉浸其中时，问自己：我刚才幻想的东西究竟是在满足什么？是被认可，还是想逃开眼前的生活？"
+    },
+    {
+      "role": "closing",
+      "start": 105.0,
+      "text": "幻想可以让你暂时抵达一个理想世界，但真正改变人生的，永远是你从幻想里回来以后做的那一步。"
+    }
+  ],
+  "claims": [
+    {
+      "id": "c1",
+      "quote": "幻想已经提前给了你一点拥有它的感觉。可感觉终究不能代替现实。",
+      "attributed_to": null,
+      "work": null,
+      "verdict": "no_attribution",
+      "original": null,
+      "source": null,
+      "notes": "作者自己的观点。这一点与加布里埃尔·厄廷根「积极幻想会削弱行动力」的研究（《反思积极思考》，2014）方向一致，但视频未引用。"
+    }
+  ],
+  "concepts": [
+    {
+      "name": "幻想解离（适应不良性白日梦）",
+      "origin": "埃利·索默",
+      "source": {
+        "author": "埃利·索默",
+        "title": "适应不良性白日梦：质性研究",
+        "locator": "Maladaptive Daydreaming: A Qualitative Inquiry, Journal of Contemporary Psychotherapy 32 (2002)",
+        "url": null
+      }
+    }
+  ],
+  "analyzed_at": "2026-10-13"
+}

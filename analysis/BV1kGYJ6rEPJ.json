@@ -1,0 +1,72 @@
+{
+  "bvid": "BV1kGYJ6rEPJ",
+  "title": "“别急着和过去和解，先去创造新的生活。当你变辽阔，过去自然就小了”",
+  "summary": "借阿伦的自我扩展模型说明放不下过去是因为生活半径太小；真正的放下不是强迫遗忘，而是扩展自己，让过去在生命中的占比变小。",
+  "themes": [
+    "放下",
+    "自我扩展",
+    "成长"
+  ],
+  "structure": [
+    {
+      "role": "hook",
+      "start": 0.0,
+      "text": "人生就是要走到下一个阶段，被新的挑战和憧憬彻底占满，才能真正把过去那些死死攥着的东西松开手。"
+    },
+    {
+      "role": "concept",
+      "start": 9.0,
+      "text": "心理学里有个概念叫自我扩展。亚瑟·阿伦认为，人天生就有一种扩大自我边界的冲动。"
+    },
+    {
+      "role": "reframe",
+      "start": 28.0,
+      "text": "你放不下一段关系，并不是因为它无可替代，而是因为你的生活里暂时没有出现足够大的新世界。当一个人的生活半径太小，过去就会显得格外巨大。"
+    },
+    {
+      "role": "example",
+      "start": 65.0,
+      "text": "真正有效的放下，是去学一件从没碰过的东西，认识新的朋友，或者干脆去一座陌生的城市。"
+    },
+    {
+      "role": "reframe",
+      "start": 117.0,
+      "text": "真正的放下，是有一天你回头看去，它还在那里，你也仍然承认它曾经重要，只是过去再也无法把你定义。"
+    },
+    {
+      "role": "closing",
+      "start": 136.0,
+      "text": "别急着和过去和解，先去创造新的生活吧。当一个更辽阔的你站起来，过去自然就变小了。"
+    }
+  ],
+  "claims": [
+    {
+      "id": "c1",
+      "quote": "心理学家亚瑟·阿伦认为，人天生就有一种扩大自我边界的冲动，我们会借着新的关系、新的能力、新的体验和新的目标，把原本不属于自己的东西一点一点纳入「我是谁」的版图里。",
+      "attributed_to": "亚瑟·阿伦",
+      "work": null,
+      "verdict": "paraphrase",
+      "original": "self-expansion can theoretically occur outside of a relational context ... individuals who engaged in novel exciting and interesting activities experienced greater self-expansion",
+      "source": {
+        "author": "亚瑟·阿伦",
+        "title": "爱与自我的扩展",
+        "locator": "Love and the Expansion of Self: Understanding Attraction and Satisfaction (Aron & Aron, 1986)",
+        "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7264388"
+      },
+      "notes": "观点介绍与模型一致。但原模型重点是亲密关系中「把他人纳入自我」；「新能力、新体验」也能扩展自我来自后续研究（Mattingly & Lewandowski 2013, Journal of Positive Psychology），original 引的是该文摘要，1986 年原书原句未查到。分手研究（Lewandowski 等 2006；Slotter 等 2010）只表明失去扩展型关系后自我概念变小，没有研究直接证实「主动自我扩展能帮人走出分手」，视频的放下建议是合理推论，不是研究结论。"
+    }
+  ],
+  "concepts": [
+    {
+      "name": "自我扩展模型",
+      "origin": "亚瑟·阿伦、伊莱恩·阿伦",
+      "source": {
+        "author": "亚瑟·阿伦",
+        "title": "爱与自我的扩展",
+        "locator": "Love and the Expansion of Self (1986)",
+        "url": null
+      }
+    }
+  ],
+  "analyzed_at": "2026-10-13"
+}

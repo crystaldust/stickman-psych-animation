@@ -1,0 +1,72 @@
+{
+  "bvid": "BV17ReH6yEW9",
+  "title": "真正的自信，不是“我觉得自己很厉害”，而是“我知道，遇到事情我不会抛弃自己”",
+  "summary": "借班杜拉的自我效能感说明自信来自一次次兑现对自己的小承诺所积累的证据，而不是自我鼓励；长期失信于自己才是不自信的根源。",
+  "themes": [
+    "自信",
+    "自我效能感",
+    "自律"
+  ],
+  "structure": [
+    {
+      "role": "hook",
+      "start": 0.0,
+      "text": "真正的自信不是凭空长出来的，它来自你一次次兑现对自己的承诺。"
+    },
+    {
+      "role": "reframe",
+      "start": 11.0,
+      "text": "真正稳定的自信，往往不是我觉得自己很厉害，而是我知道，遇到事情我不会抛弃自己。"
+    },
+    {
+      "role": "concept",
+      "start": 23.0,
+      "text": "心理学家班杜拉提过一个概念，叫自我效能感，是你对自己能不能完成某件事的信念。这种相信，不是靠鼓励产生的，是靠证据产生的。"
+    },
+    {
+      "role": "example",
+      "start": 46.0,
+      "text": "你说今晚看完书，结果看完了；你说每天跑 20 分钟，坚持下来了。每完成一次，你都在给大脑留下一个证据。"
+    },
+    {
+      "role": "reframe",
+      "start": 79.0,
+      "text": "很多人的问题并不是能力不足，而是长期失信于自己。重建自信最有效的方式，是完成一些足够小却真实的承诺。"
+    },
+    {
+      "role": "closing",
+      "start": 116.0,
+      "text": "一个人最深的底气，不是相信自己永远不会输，而是相信无论发生什么，自己都不会背叛自己。"
+    }
+  ],
+  "claims": [
+    {
+      "id": "c1",
+      "quote": "心理学家班杜拉提过一个概念，叫自我效能感。他说的并不是你有多优秀，而是你对自己能不能完成某件事的信念……而这种相信，不是靠鼓励产生的，是靠证据产生的。",
+      "attributed_to": "班杜拉",
+      "work": null,
+      "verdict": "paraphrase",
+      "original": "Perceived self-efficacy refers to beliefs in one's capabilities to organize and execute the courses of action required to produce given attainments.",
+      "source": {
+        "author": "阿尔伯特·班杜拉",
+        "title": "自我效能：控制的实施",
+        "locator": "Self-Efficacy: The Exercise of Control (1997), p. 3 定义；p. 80 亲历掌控经验最有力。另见 1977 年 Psychological Review 84(2) 论文 pp. 195–200 四种来源",
+        "url": "https://longevity.stanford.edu/self-efficacy-toward-a-unifying-theory-of-behavior-change/"
+      },
+      "notes": "观点介绍，定义准确。班杜拉认为亲历的成功经验是最有力的效能来源，言语说服较弱。但「不是靠鼓励产生的」说过头了：言语说服是四种来源之一，只是更弱、更难持久。原句和页码据 source-hunter 对原著的了解，只核实了 1977 年论文摘要，逐字引用前需对照原书。"
+    }
+  ],
+  "concepts": [
+    {
+      "name": "自我效能感",
+      "origin": "阿尔伯特·班杜拉",
+      "source": {
+        "author": "阿尔伯特·班杜拉",
+        "title": "自我效能：迈向行为改变的统一理论",
+        "locator": "Self-Efficacy: Toward a Unifying Theory of Behavioral Change, Psychological Review 84(2): 191–215 (1977)",
+        "url": null
+      }
+    }
+  ],
+  "analyzed_at": "2026-10-13"
+}

@@ -48,7 +48,7 @@ tools: WebSearch, WebFetch
 
 ## 输出
 
-只输出一个 JSON 对象，不要其他文字：
+只输出一个 JSON 对象，不要其他文字。`notes` 一律用中文写；`original` 保留原语言的原文。
 
 ```json
 {

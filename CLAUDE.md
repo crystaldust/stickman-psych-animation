@@ -8,6 +8,13 @@
 - 目录约定：包名 `stickman`，统一入口 `stickman <子命令>`（见 `src/stickman/cli.py` 的 `COMMANDS`）。采集在 `src/stickman/collect/<平台>/`，新功能按领域放在 `src/stickman/<领域>/`。
 - 已有工具：`stickman bili`（别名 `bili-collect`，代码在 `src/stickman/collect/bilibili/`），采集 B 站 up 主的视频元数据、音视频，并用 mlx-whisper 转写文案，用法见 `README.md`。
 
+## 开发流程（默认遵守，不需要用户每次提醒）
+
+- 新功能用 `/ecc:orch-add-feature`；修改已有行为用 `/ecc:orch-change-feature`；修 bug 用 `/ecc:orch-fix-defect`；纯重构用 `/ecc:orch-refine-code`。
+- 两个关卡：方案获批前不写实现，提交前要用户确认。
+- 先写测试再写实现。写完后并行派 code-reviewer 和 python-reviewer 审查；涉及外部输入、文件路径、网络或凭证时，再加 security-reviewer。CRITICAL 和 HIGH 问题修完才提交。
+- 单元测试通过后，必须用真实数据再跑一遍。真实运行发现的问题，要回补成测试或写进 skill 说明。
+
 ## 命令
 
 - 安装依赖：`uv sync`（Python 3.12，固定 3.12 是因为 mlx-whisper / numba 对 3.14 支持不稳）

@@ -1,0 +1,117 @@
+{
+  "bvid": "BV1HJer6gEa2",
+  "title": "“我们总以为，爱是给予：有时间就陪伴，有钱就给钱。但拉康说，真正的爱，是把自己没有的东西，给一个不需要它的人”",
+  "summary": "从拉康「爱是给出你没有的东西」出发，先讲匮乏的投射造成的痛苦，再讲给出真实的自己这层超越性。",
+  "themes": [
+    "亲密关系",
+    "精神分析",
+    "匮乏"
+  ],
+  "structure": [
+    {
+      "role": "hook",
+      "start": 0.0,
+      "text": "爱是给出你没有的东西。人类的爱很奇怪，它明明是爱，却常常让人痛苦。"
+    },
+    {
+      "role": "concept",
+      "start": 17.0,
+      "text": "拉康认为，真正的爱给的不是你已有的东西，而是你没有的东西。"
+    },
+    {
+      "role": "example",
+      "start": 37.0,
+      "text": "比如，一个男人总觉得自己不够有钱，不能给伴侣幸福。可伴侣从未在金钱上期待他。"
+    },
+    {
+      "role": "concept",
+      "start": 76.0,
+      "text": "弗洛伊德在《论自恋》里有个比喻，当一个人爱上其他人时，爱欲能量像阿米巴原虫的伪足从自我身上伸向所爱对象。"
+    },
+    {
+      "role": "reframe",
+      "start": 119.0,
+      "text": "拉康深化了弗洛伊德。他认为，人不是在某些情况下才匮乏，人根本上就是匮乏的。"
+    },
+    {
+      "role": "closing",
+      "start": 151.0,
+      "text": "爱是给出你没有的东西，其实就是给出真正的自己……我们在一起，仅仅只是在一起而已。"
+    }
+  ],
+  "claims": [
+    {
+      "id": "c1",
+      "quote": "爱就是把自己没有的东西给一个不需要他的人。",
+      "attributed_to": "拉康",
+      "work": null,
+      "verdict": "verbatim",
+      "original": "L'amour, c'est donner ce qu'on n'a pas à quelqu'un qui n'en veut pas.",
+      "source": {
+        "author": "雅克·拉康",
+        "title": "研讨班第十二期：精神分析的关键问题",
+        "locator": "Le Séminaire XII (1964–1965)，1965 年 3 月 17 日讲（据 L'Hebdo-Blog 脚注，未见原文）",
+        "url": "https://www.hebdo-blog.fr/deux-mi-dire-qui-ne-se-recouvrent-pas/"
+      },
+      "notes": "判为原话，但把握中等：完整句只找到一处带具体出处的引用（弗洛伊德事业学派周刊博客的脚注）。前半句「给出你没有的东西」也见于研讨班第五、第八期。翻译偏差：n'en veut pas 是「不想要」，不是视频说的「不需要」，引用时应译作「给一个不想要它的人」。"
+    },
+    {
+      "id": "c2",
+      "quote": "当一个人爱上其他人时，爱欲能量像阿米巴原虫的伪足从自我身上伸向所爱对象……弗洛伊德认为爱欲能量有限，给一个人越多留给自己越少。",
+      "attributed_to": "弗洛伊德",
+      "work": "《论自恋》",
+      "verdict": "paraphrase",
+      "original": "an original libidinal cathexis of the ego, from which some is later given off to objects, but which fundamentally persists and is related to the object-cathexes much as the body of an amoeba is related to the pseudopodia which it puts out",
+      "source": {
+        "author": "西格蒙德·弗洛伊德",
+        "title": "论自恋：一篇导论",
+        "locator": "Zur Einführung des Narzißmus (1914)，第一部分（阿米巴比喻、自我力比多与对象力比多此消彼长）；第三部分（爱会降低自尊）",
+        "url": "https://english.hawaii.edu/criticalink/narc/guide7.html"
+      },
+      "notes": "作品正确，判为意译。阿米巴比喻在原文中是指自我力比多伸向一般对象，不专指恋人；「此消彼长」和「恋爱时主体仿佛放弃了自己的人格」确是弗洛伊德的观点。英文原句据 source-hunter 对标准版译本的记忆，阿米巴一句只经搜索摘要间接确认。"
+    },
+    {
+      "id": "c3",
+      "quote": "在爱中，对象变得崇高，自我变得平凡。",
+      "attributed_to": "弗洛伊德",
+      "work": "《论自恋》",
+      "verdict": "misattributed",
+      "original": "the ego becomes more and more unassuming and modest, and the object more and more sublime and precious",
+      "source": {
+        "author": "西格蒙德·弗洛伊德",
+        "title": "群体心理学与自我分析",
+        "locator": "Massenpsychologie und Ich-Analyse (1921)，第八章「恋爱与催眠」",
+        "url": "https://gutenberg.org/files/35877/35877-h/35877-h.htm"
+      },
+      "notes": "句子本身是弗洛伊德原话（古腾堡全文核对过），但视频把它放在讲《论自恋》的段落里，作品张冠李戴，按判定标准记为误引。正确出处是《群体心理学与自我分析》第八章。"
+    },
+    {
+      "id": "c4",
+      "quote": "人不是在某些情况下才匮乏，人根本上就是匮乏的。唯一拥有的东西，就是它的没有。",
+      "attributed_to": "拉康",
+      "work": null,
+      "verdict": "unverified",
+      "original": null,
+      "source": null,
+      "notes": "以「他认为」介绍。拉康确有「匮乏」（manque）这一核心概念，但本批分析漏派 source-hunter，这段具体表述未核实，暂记为无法核实。"
+    }
+  ],
+  "concepts": [
+    {
+      "name": "匮乏",
+      "origin": "拉康",
+      "source": null
+    },
+    {
+      "name": "自我力比多与对象力比多",
+      "origin": "弗洛伊德",
+      "source": {
+        "author": "西格蒙德·弗洛伊德",
+        "title": "论自恋：一篇导论",
+        "locator": "第一部分",
+        "url": null
+      }
+    }
+  ],
+  "analyzed_at": "2026-10-13"
+}
