@@ -14,6 +14,8 @@ uv sync
 
 ## 用法
 
+统一入口是 `stickman`，采集命令在 `stickman bili` 下；`bili-collect` 是它的别名，两种写法等价（下面的示例用 `bili-collect`）。
+
 ```bash
 # 列出 up 主视频（会补全标题、时长、日期，并写入索引）
 uv run bili-collect list https://space.bilibili.com/3546974439607171 --limit 20
@@ -30,7 +32,7 @@ uv run bili-collect collect 3546974439607171 --limit 30 --transcribe
 ```
 
 `fetch` 和 `collect` 都支持 `--video` / `--audio` / `--transcribe`，可以任意组合。
-`--cookies-from-browser`、`--data-dir`、`--sleep` 等全局选项必须写在子命令**之前**，例如 `bili-collect --sleep 2 collect ...`。
+`--cookies-from-browser`、`--data-dir`、`--sleep` 等全局选项必须写在子命令**之前**，例如 `bili-collect --sleep 2 collect ...`。用 `stickman` 入口时写在 `bili` 之后：`stickman bili --sleep 2 collect ...`。
 
 ### 文案从哪来
 
@@ -81,7 +83,7 @@ data/<mid>/<bvid>/subtitles.<语言>.srt  # B 站官方字幕对照（需登录�
 ## 开发
 
 ```bash
-uv run pytest --cov=bili_collect --cov-report=term-missing
+uv run pytest --cov=stickman --cov-report=term-missing
 ```
 
 单元测试用替身代替 yt-dlp、ffmpeg 和 Whisper，不访问网络。

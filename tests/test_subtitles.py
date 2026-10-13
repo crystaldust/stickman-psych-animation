@@ -1,7 +1,7 @@
 import pytest
 
-from bili_collect.subtitles import parse_srt, pick_subtitle
-from bili_collect.transcribe import Segment
+from stickman.collect.bilibili.subtitles import parse_srt, pick_subtitle
+from stickman.collect.bilibili.transcribe import Segment
 
 SRT = """1
 00:00:00,000 --> 00:00:02,500

@@ -42,8 +42,8 @@ def _non_negative_float(value: str) -> float:
     return number
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="bili-collect", description="B 站 up 主内容采集工具")
+def build_parser(prog: str = "bili-collect") -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog=prog, description="B 站 up 主内容采集工具")
     parser.add_argument("--data-dir", default="data", help="数据目录（默认 ./data）")
     cookies = parser.add_mutually_exclusive_group()
     cookies.add_argument("--cookies-from-browser", metavar="BROWSER", help="从浏览器读取 B 站 cookies，如 chrome")
@@ -168,8 +168,8 @@ def _configure_logging(verbose: bool) -> None:
         logging.getLogger(name).setLevel(logging.WARNING)
 
 
-def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+def main(argv: list[str] | None = None, prog: str = "bili-collect") -> int:
+    args = build_parser(prog).parse_args(argv)
     _configure_logging(args.verbose)
     try:
         target = _resolve(args)

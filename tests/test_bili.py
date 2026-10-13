@@ -3,8 +3,8 @@ from pathlib import Path
 import pytest
 from yt_dlp.utils import YoutubeDLError
 
-from bili_collect.bili import AccessDeniedError, BiliClient, BiliError, ClientOptions
-from bili_collect.models import VideoEntry
+from stickman.collect.bilibili.bili import AccessDeniedError, BiliClient, BiliError, ClientOptions
+from stickman.collect.bilibili.models import VideoEntry
 
 from fakes import make_factory
 

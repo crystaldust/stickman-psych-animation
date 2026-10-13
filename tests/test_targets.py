@@ -3,7 +3,7 @@ import urllib.request
 
 import pytest
 
-from bili_collect.targets import (
+from stickman.collect.bilibili.targets import (
     BiliOnlyRedirectHandler,
     Target,
     TargetError,

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from bili_collect.media import MediaError, extract_audio
+from stickman.collect.bilibili.media import MediaError, extract_audio
 
 
 def writing_runner(calls):

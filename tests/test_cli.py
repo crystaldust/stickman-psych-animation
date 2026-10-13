@@ -2,10 +2,10 @@ from pathlib import Path
 
 import pytest
 
-from bili_collect import cli
-from bili_collect.bili import AccessDeniedError
-from bili_collect.models import VideoEntry
-from bili_collect.pipeline import CollectReport, Failure, VideoResult
+from stickman.collect.bilibili import cli
+from stickman.collect.bilibili.bili import AccessDeniedError
+from stickman.collect.bilibili.models import VideoEntry
+from stickman.collect.bilibili.pipeline import CollectReport, Failure, VideoResult
 
 
 @pytest.fixture

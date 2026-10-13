@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from bili_collect.models import VideoEntry
-from bili_collect.storage import Layout, merge_entries, read_index, write_index, write_json
+from stickman.collect.bilibili.models import VideoEntry
+from stickman.collect.bilibili.storage import Layout, merge_entries, read_index, write_index, write_json
 
 
 def entry(bvid, title="t", **kw):

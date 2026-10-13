@@ -1,7 +1,7 @@
 [project]
-name = "bili-collect"
+name = "stickman"
 version = "0.1.0"
-description = "Collect Bilibili uploader videos: metadata, media download, audio extraction and Whisper transcripts"
+description = "Tools for a stickman animation channel: Bilibili collection, transcript analysis and script writing"
 readme = "README.md"
 authors = [
     { name = "Lance", email = "lance@m4-air" }
@@ -13,7 +13,11 @@ dependencies = [
 ]
 
 [project.scripts]
-bili-collect = "bili_collect.cli:run"
+stickman = "stickman.cli:run"
+bili-collect = "stickman.collect.bilibili.cli:run"  # 兼容旧命令
+
+[tool.uv.build-backend]
+module-name = "stickman"
 
 [build-system]
 requires = ["uv_build>=0.10.12,<0.11.0"]

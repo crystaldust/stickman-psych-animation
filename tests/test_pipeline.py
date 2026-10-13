@@ -5,12 +5,12 @@ from dataclasses import replace
 
 import pytest
 
-from bili_collect.bili import AccessDeniedError, BiliError
-from bili_collect.models import VideoEntry
-from bili_collect import pipeline
-from bili_collect.pipeline import Context, Failure, collect_user, list_user, process_video
-from bili_collect.storage import Layout, read_index
-from bili_collect.transcribe import Segment
+from stickman.collect.bilibili.bili import AccessDeniedError, BiliError
+from stickman.collect.bilibili.models import VideoEntry
+from stickman.collect.bilibili import pipeline
+from stickman.collect.bilibili.pipeline import Context, Failure, collect_user, list_user, process_video
+from stickman.collect.bilibili.storage import Layout, read_index
+from stickman.collect.bilibili.transcribe import Segment
 
 from fakes import MID, FakeClient
 

@@ -5,8 +5,8 @@ from typing import Any
 
 from yt_dlp.utils import DownloadError
 
-from bili_collect.bili import BiliError
-from bili_collect.models import VideoEntry
+from stickman.collect.bilibili.bili import BiliError
+from stickman.collect.bilibili.models import VideoEntry
 
 MID = "3546974439607171"
 

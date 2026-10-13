@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from bili_collect.transcribe import (
+from stickman.collect.bilibili.transcribe import (
     CHINESE_PROMPT,
     DEFAULT_MODEL,
     Segment,
