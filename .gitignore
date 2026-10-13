@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+
+# 采集数据、媒体文件、cookies 不入库
+data/
+*.mp4
+*.m4a
+*.wav
+*cookies*
+*.cookies
+cookies/
+.env
+.DS_Store
