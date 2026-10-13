@@ -196,3 +196,25 @@ def test_collect_user_redownloads_when_only_intermediate_video_exists(make_ctx, 
 
     assert report.done == ("BV1",)
     assert ("video", "BV1") in client.calls
+
+
+def test_collect_user_audio_flag_extracts_wav_and_counts_for_completion(make_ctx, tmp_path):
+    client = FakeClient(listing=[VideoEntry("BV1", "一")])
+
+    report = collect_user(make_ctx(client), MID, audio=True)
+
+    assert report.done == ("BV1",)
+    assert (tmp_path / MID / "BV1" / "audio.wav").exists()
+
+    again = collect_user(make_ctx(FakeClient(listing=[VideoEntry("BV1", "一")])), MID, audio=True)
+    assert again.skipped == ("BV1",)
+
+
+def test_collect_user_without_audio_flag_ignores_missing_wav(make_ctx, tmp_path):
+    vdir = tmp_path / MID / "BV1"
+    vdir.mkdir(parents=True)
+    (vdir / "meta.json").write_text("{}", encoding="utf-8")
+
+    report = collect_user(make_ctx(FakeClient(listing=[VideoEntry("BV1", "一")])), MID)
+
+    assert report.skipped == ("BV1",)

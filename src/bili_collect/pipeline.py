@@ -129,16 +129,23 @@ def list_user(ctx: Context, mid: str, limit: int | None = None, *, enrich: bool 
     return entries
 
 
-def _is_complete(directory: Path, video: bool, transcribe: bool) -> bool:
+def _is_complete(directory: Path, video: bool, audio: bool, transcribe: bool) -> bool:
     return (
         (directory / "meta.json").exists()
         and (not transcribe or (directory / "transcript.json").exists())
+        and (not audio or (directory / "audio.wav").exists())
         and (not video or find_output(directory, "video") is not None)
     )
 
 
 def collect_user(
-    ctx: Context, mid: str, *, limit: int | None = None, video: bool = False, transcribe: bool = False
+    ctx: Context,
+    mid: str,
+    *,
+    limit: int | None = None,
+    video: bool = False,
+    audio: bool = False,
+    transcribe: bool = False,
 ) -> CollectReport:
     """批量处理 up 主的视频。单条失败记入报告继续；遇到风控立即中止，避免加重封禁。"""
     done: list[str] = []
@@ -147,12 +154,12 @@ def collect_user(
 
     entries = list_user(ctx, mid, limit=limit, enrich=False)  # process_video 会取完整元数据
     for index, entry in enumerate(entries, start=1):
-        if _is_complete(ctx.layout.video_dir(mid, entry.bvid), video, transcribe):
+        if _is_complete(ctx.layout.video_dir(mid, entry.bvid), video, audio, transcribe):
             skipped.append(entry.bvid)
             continue
         logger.info("[%d/%d] %s", index, len(entries), entry.bvid)
         try:
-            process_video(ctx, entry.bvid, mid=mid, video=video, transcribe=transcribe)
+            process_video(ctx, entry.bvid, mid=mid, video=video, audio=audio, transcribe=transcribe)
             done.append(entry.bvid)
         except AccessDeniedError:
             raise

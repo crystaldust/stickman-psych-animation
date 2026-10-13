@@ -20,8 +20,8 @@ def recorder(monkeypatch):
         calls.append(("fetch", bvid, video, audio, transcribe))
         return VideoResult(bvid=bvid, mid="42", directory=Path("/tmp/x"), transcript=None)
 
-    def fake_collect(ctx, mid, *, limit=None, video=False, transcribe=False):
-        calls.append(("collect", mid, limit, video, transcribe))
+    def fake_collect(ctx, mid, *, limit=None, video=False, audio=False, transcribe=False):
+        calls.append(("collect", mid, limit, video, audio, transcribe))
         return CollectReport(done=("BV1",), skipped=(), failed=(Failure("BV2", "boom"),))
 
     monkeypatch.setattr(cli, "list_user", fake_list)
@@ -50,8 +50,14 @@ def test_collect_reports_failures_with_nonzero_exit(recorder, capsys):
     code = cli.main(["collect", "42", "--transcribe"])
 
     assert code == 1
-    assert recorder == [("collect", "42", None, False, True)]
+    assert recorder == [("collect", "42", None, False, False, True)]
     assert "BV2" in capsys.readouterr().err
+
+
+def test_collect_accepts_all_three_output_flags(recorder):
+    cli.main(["collect", "42", "--audio", "--video", "--transcribe"])
+
+    assert recorder == [("collect", "42", None, True, True, True)]
 
 
 def test_wrong_target_kind_is_rejected(recorder, capsys):

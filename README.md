@@ -29,6 +29,9 @@ uv run bili-collect fetch BV1CSWXzAEys --audio
 uv run bili-collect collect 3546974439607171 --limit 30 --transcribe
 ```
 
+`fetch` 和 `collect` 都支持 `--video` / `--audio` / `--transcribe`，可以任意组合（`--transcribe` 已包含抽音频）。
+`--cookies-from-browser`、`--data-dir`、`--sleep` 等全局选项必须写在子命令**之前**，例如 `bili-collect --sleep 2 collect ...`。
+
 支持的输入：BV 号、视频链接（含 `?spm_id_from=...` 等参数）、b23.tv 短链、mid、空间链接。
 
 ### 被风控拦截（-352 / 412）

@@ -60,7 +60,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_collect.add_argument("target", help="mid 或空间链接")
     p_collect.add_argument("--limit", type=_positive_int, help="最多处理多少条（从最新开始）")
     p_collect.add_argument("--video", action="store_true", help="同时下载视频文件")
-    p_collect.add_argument("--transcribe", action="store_true", help="转写成带时间戳的文案")
+    p_collect.add_argument("--audio", action="store_true", help="抽取音频为 wav")
+    p_collect.add_argument("--transcribe", action="store_true", help="转写成带时间戳的文案（含抽音频）")
     return parser
 
 
@@ -114,7 +115,12 @@ def _run_fetch(args: argparse.Namespace, target: Target) -> int:
 
 def _run_collect(args: argparse.Namespace, target: Target) -> int:
     report = collect_user(
-        build_context(args), target.id, limit=args.limit, video=args.video, transcribe=args.transcribe
+        build_context(args),
+        target.id,
+        limit=args.limit,
+        video=args.video,
+        audio=args.audio,
+        transcribe=args.transcribe,
     )
     print(f"完成 {len(report.done)}，跳过 {len(report.skipped)}，失败 {len(report.failed)}")
     for failure in report.failed:
