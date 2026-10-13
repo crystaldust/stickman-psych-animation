@@ -1,0 +1,31 @@
+[project]
+name = "bili-collect"
+version = "0.1.0"
+description = "Collect Bilibili uploader videos: metadata, media download, audio extraction and Whisper transcripts"
+readme = "README.md"
+authors = [
+    { name = "Lance", email = "lance@m4-air" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "mlx-whisper>=0.4.3",
+    "yt-dlp>=2026.8.19",
+]
+
+[project.scripts]
+bili-collect = "bili_collect.cli:run"
+
+[build-system]
+requires = ["uv_build>=0.10.12,<0.11.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["tests"]
+addopts = "-q"
