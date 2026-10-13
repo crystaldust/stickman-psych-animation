@@ -4,7 +4,8 @@
 
 ## 当前状态
 
-- 调研结论见 `research-stickman-workflow.md`。
+- 文档在 `docs/`：调研结论 `docs/research-stickman-workflow.md`，ECC 流程复盘 `docs/ecc-orchestration-retro.md`。
+- 目录约定：目前只有采集工具。开始做第二个功能（分析 / 生产）时，先用 `/ecc:orch-refine-code` 把 `bili_collect` 重构为 `src/stickman/collect/bilibili/`，统一入口 `stickman`。
 - 已有工具：`bili-collect`（`src/bili_collect/`），采集 B 站 up 主的视频元数据、音视频，并用 mlx-whisper 转写文案，用法见 `README.md`。
 
 ## 命令
