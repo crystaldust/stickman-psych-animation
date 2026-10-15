@@ -122,6 +122,27 @@ uv run stickman video reshoot data/videos/20261014-jie-jing s02 s07   # 只重�
 - 参考图、音色、BGM 等默认值在 `src/stickman/video/config.py`，单条视频可在工作目录放 `video.json` 覆盖（只接受已知参数）。
 - 多音字在 `src/stickman/video/text.py` 的 `HOMOPHONES` 里用同音字替换，只影响配音，字幕保留原文。
 
+### 分层镜头
+
+默认每个镜头是一张图整体缓慢摆动。环境需要「自己动」的镜头（窗外风景掠过、圈子缩小、热气升起）可以在 `shots.json` 里加 `motion`，拆成几层分别出图再合成。分层镜头最多占全片镜头数的三分之一，`check` 会拦。
+
+```json
+{"id": "s03", "line": 5, "bg": "橙色", "scene": "两人坐火车",
+ "motion": {"type": "scroll", "speed": 700,
+            "layers": {"bg": "车厢内部，左边一扇大窗户", "scenery": "田野、远山和电线杆", "fg": "两个火柴人并排坐在座椅上"}}}
+```
+
+| type | 图层 | 动起来的是 | 参数 |
+|---|---|---|---|
+| `scroll` | bg（窗户填绿）、scenery、fg | 窗外风景循环掠过，人物随车颠簸 | `speed` 像素/秒，默认 700 |
+| `scale` | bg、prop（道具）、fg（人物） | 道具以人物脚下为中心从 `from` 缓到 `to`（画面宽度比例），人物缩到 1/3 画面高并轻微呼吸 | `from`、`to`；`feet` 脚的位置，默认 `[0.5, 0.79]` |
+| `rise` | bg、puff（一缕蒸汽） | 两缕蒸汽交替从 `at` 升起淡出 | `at` 画面比例 `[x, y]` |
+| `glow` | 无（用整幅图） | 图里某种颜色的区域明暗呼吸 | `color` `#RRGGBB` |
+
+- 图层存在 `layers/<镜头>/<图层>.jpg`；人物、道具、蒸汽画在纯色底上，合成时抠掉，位置按实际画出来的范围算。
+- `reshoot <dir> s03` 重出这个镜头的所有图层，`reshoot <dir> s03:fg` 只重出一层（旧图移到 `img_rejected/s03-fg.<n>.jpg`）；改了 `speed` / `at` 等参数用 `--no-generate` 只重渲。
+- 图层按文件名缓存：改了某个镜头的 `type` 或图层描述，旧图层不会自动作废，要对这个镜头跑一次 `reshoot`。
+
 ## 开发
 
 ```bash

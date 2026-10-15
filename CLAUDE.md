@@ -40,14 +40,27 @@
 ```
 定稿草稿 drafts/*.md
   → stickman video init：narration.txt（一行一句）+ shots.json 骨架（每条「> 画面」一个镜头）
-  → Claude 填 shots.json 的 bg / scene（人物身体结构要写明，情绪靠头部角度和表情，不写「缩着肩膀」这类会让人体变形的词）
+  → Claude 填 shots.json 的 bg / scene，按下面的规则给少数镜头加 motion（人物身体结构要写明，情绪靠头部角度和表情，不写「缩着肩膀」这类会让人体变形的词）
   → stickman video check
-  → stickman video render：Seedream 出图 ∥ seed-audio 配音 → 按词级时间戳裁停顿、生成字幕 → 每镜一段（摆动 + 质感 + 烧字幕）→ 无损拼接 + 混 BGM
+  → stickman video render：Seedream 出图 ∥ seed-audio 配音 → 按词级时间戳裁停顿、生成字幕 → 每镜一段（整图摆动或分层合成 + 质感 + 烧字幕）→ 无损拼接 + 混 BGM
   → 看联系表挑出问题镜头 → stickman video reshoot <dir> <id>...
   → 成片 data/videos/<slug>/<slug>.mp4
 ```
 
 人负责选题、定稿、听多音字；机器负责分镜到成片。
+
+### 什么时候分层（填 shots.json 时逐个镜头判断）
+
+默认整张图摆动。只有画面里**有一样东西按自己的逻辑运动、和人物无关，而且这个运动正是这句旁白要表达的**，才加 `motion` 分层：
+
+- `scroll`：坐车、坐地铁、看窗外——环境相对人物在移动。
+- `scale`：一个象征物在变大或变小，而旁白正说着这个变化（圈子变小、距离拉远、压力变大）。
+- `rise`：热气、烟、香——给安静的生活场景一点呼吸。
+- `glow`：旁白在强调画面里某块区域（两个圈的重叠处、心里亮起的一点），不需要额外出图。
+
+不分层：两个人拥抱、牵手等互相交叠的画面（拆不开）；特写；纯抽象或符号画面；本身已经很满的画面；只是想让人物动一动的镜头（摆动就够）。
+
+分层镜头最多占三分之一（`check` 会拦），宁少勿多，优先给开头、转折和结尾。图层描述同样遵守人物结构的写法；`rise` 的 `at` 要和背景里锅、杯子的位置对上，出图后看一眼不对就改 `at` 再 `reshoot --no-generate`。字段和配方见 `README.md`「分层镜头」，代码在 `motion.py` / `compose.py`。
 
 ## 约定
 
