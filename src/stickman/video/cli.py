@@ -13,6 +13,7 @@ from . import pipeline
 from .config import VideoConfig, load_config
 from .draft import read_draft, write_workdir
 from .errors import VideoError
+from .motion import max_layered
 from .shots import load_spec, shot_lines
 from .workdir import WorkDir, inside_project, safe_slug
 
@@ -48,11 +49,19 @@ def _cmd_init(args: argparse.Namespace) -> int:
 
 
 def _cmd_check(args: argparse.Namespace) -> int:
-    spec, lines = load_spec(WorkDir(Path(args.work)))
-    for sid, shot_text in shot_lines(spec, lines):
-        first = next(s.line for s in spec.shots if s.id == sid)
-        print(f"{sid}  第 {first}–{first + len(shot_text) - 1} 行  {''.join(shot_text)[:24]}")
-    print(f"通过：{len(spec.shots)} 个镜头，{len(lines)} 行旁白")
+    work = WorkDir(Path(args.work))
+    spec, lines = load_spec(work)
+    for shot, (sid, shot_text) in zip(spec.shots, shot_lines(spec, lines)):
+        layered = ""
+        if shot.motion:
+            names = ", ".join(layer.name for layer in shot.motion.layers) or "整幅图"
+            layered = f"  [分层：{shot.motion.kind}（{names}）]"
+        print(f"{sid}  第 {shot.line}–{shot.line + len(shot_text) - 1} 行  {''.join(shot_text)[:24]}{layered}")
+    n_layered = sum(1 for s in spec.shots if s.motion)
+    targets = spec.targets(work)
+    missing = sum(1 for t in targets if not t.path.is_file())
+    print(f"通过：{len(spec.shots)} 个镜头，{len(lines)} 行旁白；"
+          f"分层镜头 {n_layered} 个（上限 {max_layered(len(spec.shots))}）；要出图 {len(targets)} 张，缺 {missing} 张")
     return EXIT_OK
 
 

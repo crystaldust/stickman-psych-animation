@@ -15,7 +15,12 @@ from stickman.video.render import (
     render_clips,
     write_manifest,
 )
+from stickman.video.shots import Shot
 from stickman.video.workdir import WorkDir
+
+
+def _shots(*ids):
+    return tuple(Shot(sid, i + 1, "蓝色", "站着") for i, sid in enumerate(ids))
 
 
 def test_clip_filter_shifts_subtitles_to_the_clip_place_on_the_timeline():
@@ -46,7 +51,7 @@ def test_subtitle_path_is_escaped():
 def test_clip_jobs_split_frames_and_mark_the_last(tmp_path):
     work = WorkDir(tmp_path)
 
-    jobs = clip_jobs(work, ("s01", "s02"), (0, 82, 172))
+    jobs = clip_jobs(work, _shots("s01", "s02"), (0, 82, 172))
 
     assert [(j.shot_id, j.start_frame, j.frames, j.is_last) for j in jobs] == [("s01", 0, 82, False), ("s02", 82, 90, True)]
     assert jobs[0].image == work.image("s01") and jobs[1].out == work.clip("s02")
@@ -54,7 +59,7 @@ def test_clip_jobs_split_frames_and_mark_the_last(tmp_path):
 
 def test_render_clips_bakes_a_still_then_encodes_each_clip(tmp_path):
     work = WorkDir(tmp_path)
-    jobs = clip_jobs(work, ("s01", "s02"), (0, 82, 172))
+    jobs = clip_jobs(work, _shots("s01", "s02"), (0, 82, 172))
     runner = FakeRunner()
 
     render_clips(jobs, work.subs, VideoConfig(render_workers=2), runner)
@@ -69,7 +74,7 @@ def test_render_clips_bakes_a_still_then_encodes_each_clip(tmp_path):
 
 def test_render_clips_surfaces_the_first_failure(tmp_path):
     work = WorkDir(tmp_path)
-    jobs = clip_jobs(work, ("s01",), (0, 82))
+    jobs = clip_jobs(work, _shots("s01"), (0, 82))
 
     with pytest.raises(VideoError):
         render_clips(jobs, work.subs, VideoConfig(), FakeRunner(fail_on=ENCODER))
@@ -121,7 +126,7 @@ def test_failed_clip_keeps_the_previous_good_clip(tmp_path):
     work = WorkDir(tmp_path)
     work.clip_dir.mkdir()
     work.clip("s01").write_bytes(b"good")
-    jobs = clip_jobs(work, ("s01",), (0, 82))
+    jobs = clip_jobs(work, _shots("s01"), (0, 82))
 
     with pytest.raises(VideoError):
         render_clips(jobs, work.subs, VideoConfig(), FakeRunner(fail_on=ENCODER))

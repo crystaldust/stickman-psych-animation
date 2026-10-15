@@ -11,8 +11,9 @@ from stickman.video.tts import TtsResult
 class FakeRunner:
     """记录每条命令；ffmpeg 命令会创建输出文件（最后一个参数），ffprobe 按路径返回预置的时长或帧数。"""
 
-    def __init__(self, durations=None, frames=None, default_duration=2.0, fail_on=None):
+    def __init__(self, durations=None, frames=None, default_duration=2.0, fail_on=None, ppm_pixels=None):
         self.calls: list[list[str]] = []
+        self.ppm_pixels = ppm_pixels  # 探测图层范围时写出的 .ppm：默认 2x1 全黑，即内容铺满整个画面
         self.durations = dict(durations or {})
         self.frames = dict(frames or {})
         self.default_duration = default_duration
@@ -31,6 +32,10 @@ class FakeRunner:
             return f"{self.durations.get(path, self.durations.get(name, self.default_duration))}\n"
         out = Path(cmd[-1])
         out.parent.mkdir(parents=True, exist_ok=True)
+        if out.suffix == ".ppm":
+            pixels = self.ppm_pixels or [(0, 0, 0), (0, 0, 0)]
+            out.write_bytes(ppm(len(pixels), 1, pixels))
+            return ""
         out.write_bytes(b"media:" + " ".join(cmd).encode())
         return ""
 
@@ -72,13 +77,19 @@ class FakeTts:
         return TtsResult(b"mp3", meta, meta["original_duration"])
 
 
+def ppm(width: int, height: int, pixels) -> bytes:
+    return f"P6\n{width} {height}\n255\n".encode() + bytes(c for px in pixels for c in px)
+
+
 class FakeImages:
+    """按 label 的最后一段记录提示词：镜头是 s01，图层是 s03:fg。"""
+
     def __init__(self, fail_ids=()):
         self.prompts: dict[str, str] = {}
         self.fail_ids = set(fail_ids)
 
     def __call__(self, prompt, ref_url, key, config, out, label=""):
-        sid = Path(out).stem
+        sid = label.split()[-1] if label else Path(out).stem
         self.prompts[sid] = prompt
         if sid in self.fail_ids:
             self.fail_ids.discard(sid)

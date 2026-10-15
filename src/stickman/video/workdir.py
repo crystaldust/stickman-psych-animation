@@ -84,8 +84,16 @@ class WorkDir:
     def timings(self) -> Path:
         return self.root / "timings.json"
 
+    @property
+    def layers_dir(self) -> Path:
+        return self.root / "layers"
+
     def image(self, shot_id: str) -> Path:
         return self.img_dir / f"{safe_id(shot_id)}.jpg"
+
+    def layer(self, shot_id: str, name: str) -> Path:
+        """分层镜头的一层：layers/<镜头>/<图层>.jpg。"""
+        return self.layers_dir / safe_id(shot_id) / f"{_safe(name, '图层名')}.jpg"
 
     def voice(self, shot_id: str) -> Path:
         return self.voice_dir / f"{safe_id(shot_id)}.mp3"

@@ -120,3 +120,55 @@ def test_config_file_rejects_unknown_keys_and_bad_values(tmp_path, content):
 
     with pytest.raises(VideoError):
         load_config(tmp_path)
+
+
+GLOW = {"type": "glow", "color": "#F9E440"}
+RISE = {"type": "rise", "layers": {"bg": "桌上一口锅", "puff": "一缕蒸汽"}, "at": [0.5, 0.6]}
+
+
+def test_motion_is_optional_and_parsed_per_shot(tmp_path):
+    work = _work(tmp_path, [_shot("s01", 1), {**_shot("s02", 2), "motion": GLOW}, _shot("s03", 3)])
+
+    spec, _ = load_spec(work)
+
+    assert [s.motion.kind if s.motion else None for s in spec.shots] == [None, "glow", None]
+
+
+def test_bad_motion_is_reported_with_the_other_errors(tmp_path):
+    work = _work(tmp_path, [{**_shot("s01", 1), "motion": {"type": "zoom"}}, _shot("s02", 3, bg="")])
+
+    with pytest.raises(VideoError) as exc:
+        load_spec(work)
+
+    assert "s01" in str(exc.value) and "type" in str(exc.value) and "s02" in str(exc.value)
+
+
+def test_more_than_a_third_of_the_shots_layered_is_rejected(tmp_path):
+    work = _work(tmp_path, [{**_shot("s01", 1), "motion": GLOW}, {**_shot("s02", 2), "motion": GLOW}, _shot("s03", 3)])
+
+    with pytest.raises(VideoError) as exc:
+        load_spec(work)
+
+    assert "上限 1" in str(exc.value) and "s01" in str(exc.value) and "s02" in str(exc.value)
+
+
+def test_image_targets_are_whole_frames_for_sway_and_glow_and_layers_otherwise(tmp_path):
+    work = _work(tmp_path, [{**_shot("s01", 1), "motion": RISE}, _shot("s02", 2), _shot("s03", 3)])
+    spec, _ = load_spec(work)
+
+    targets = spec.targets(work)
+
+    assert [t.id for t in targets] == ["s01:bg", "s01:puff", "s02", "s03"]
+    assert targets[0].path == work.layer("s01", "bg") and targets[2].path == work.image("s02")
+    assert targets[0].prompt.startswith("画风，背景是蓝色。画面内容：桌上一口锅")
+    assert targets[2].prompt == "画风，背景是蓝色。画面内容：火柴人站着"
+    assert {t.shot_id for t in targets} == {"s01", "s02", "s03"}
+
+
+def test_check_command_marks_layered_shots_and_the_cap(tmp_path, capsys):
+    _work(tmp_path, [_shot("s01", 1), {**_shot("s02", 2), "motion": RISE}, _shot("s03", 3)])
+
+    assert cli.main(["check", str(tmp_path)]) == 0
+    out = capsys.readouterr().out
+    assert "分层：rise（bg, puff）" in out and "分层镜头 1 个（上限 1）" in out
+    assert "要出图 4 张，缺 4 张" in out

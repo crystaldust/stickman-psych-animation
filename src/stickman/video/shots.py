@@ -1,15 +1,18 @@
 """分镜：读取并校验 narration.txt + shots.json。
 
 一个镜头从第 line 行旁白开始，到下一个镜头的前一行为止。校验不过就不往下走，
-这样没填完的骨架永远不会被拿去调付费接口。
+这样没填完的骨架永远不会被拿去调付费接口。镜头可以带 motion（见 motion.py）改为分层，
+但分层镜头最多占三分之一。
 """
 
 import json
 import string
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from .errors import VideoError
+from .motion import Motion, layer_prompt, max_layered, parse_motion
 from .workdir import WorkDir, safe_id
 
 
@@ -19,6 +22,20 @@ class Shot:
     line: int
     bg: str
     scene: str
+    motion: Motion | None = None
+
+
+@dataclass(frozen=True)
+class ImageTarget:
+    """要出的一张图：整幅镜头图（id 是 s01）或分层镜头的一层（id 是 s03:fg）。"""
+    id: str
+    shot_id: str
+    prompt: str
+    path: Path
+
+    @property
+    def rejected_stem(self) -> str:
+        return self.id.replace(":", "-")
 
 
 @dataclass(frozen=True)
@@ -31,6 +48,17 @@ class ShotSpec:
 
     def ids(self) -> tuple[str, ...]:
         return tuple(s.id for s in self.shots)
+
+    def targets(self, work: WorkDir) -> tuple[ImageTarget, ...]:
+        """整条视频要出的图。分层镜头只出各层；glow 没有图层，用整幅图。"""
+        out: list[ImageTarget] = []
+        for s in self.shots:
+            if s.motion is None or not s.motion.layers:
+                out.append(ImageTarget(s.id, s.id, self.prompt(s), work.image(s.id)))
+                continue
+            out += [ImageTarget(f"{s.id}:{layer.name}", s.id, layer_prompt(self.style, s.bg, s.motion, layer),
+                                work.layer(s.id, layer.name)) for layer in s.motion.layers]
+        return tuple(out)
 
 
 def _style_errors(style: Any) -> list[str]:
@@ -70,7 +98,16 @@ def _shot_errors(raw: Any, index: int, n_lines: int, prev_line: int, seen: set[s
         value = raw.get(field)
         if not isinstance(value, str) or not value.strip():
             errors.append(f"{label}：{field} 不能为空")
-    return errors
+    return errors + parse_motion(raw.get("motion"), label)[1]
+
+
+def _cap_errors(raw_shots: list) -> list[str]:
+    layered = [r.get("id") for r in raw_shots if isinstance(r, dict) and r.get("motion") is not None]
+    cap = max_layered(len(raw_shots))
+    if len(layered) <= cap:
+        return []
+    return [f"分层镜头有 {len(layered)} 个（{', '.join(map(str, layered))}），上限 {cap} 个（镜头数的三分之一）："
+            "只给环境要自己动的镜头分层，其余去掉 motion"]
 
 
 def _read_json(work: WorkDir) -> dict:
@@ -109,9 +146,11 @@ def load_spec(work: WorkDir) -> tuple[ShotSpec, tuple[str, ...]]:
             if isinstance(raw.get("id"), str):
                 seen.add(raw["id"])
             prev_line = raw["line"] if type(raw.get("line")) is int else prev_line
+    errors += _cap_errors(raw_shots)
     if errors:
         raise VideoError(f"{work.shots} 有 {len(errors)} 处问题：\n  " + "\n  ".join(errors))
-    shots = tuple(Shot(r["id"], r["line"], r["bg"].strip(), r["scene"].strip()) for r in raw_shots)
+    shots = tuple(Shot(r["id"], r["line"], r["bg"].strip(), r["scene"].strip(), parse_motion(r.get("motion"), r["id"])[0])
+                  for r in raw_shots)
     return ShotSpec(data["style"], shots), lines
 
 

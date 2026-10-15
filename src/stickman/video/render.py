@@ -1,4 +1,4 @@
-"""镜头片段与成片：每张图一段（缓慢透视摆动 + 胶片质感 + 烧字幕），再无损拼接、混入配音和 BGM。
+"""镜头片段与成片：每个镜头一段（整张图缓慢透视摆动，或分层合成 + 胶片质感 + 烧字幕），再无损拼接、混入配音和 BGM。
 
 字幕按片段在时间线上的位置烧进每段，所以单独重渲一段时帧数必须不变；
 拼接用 -c copy，所以所有片段必须用同样的编码参数——两者都记在 render.json 里核对。
@@ -11,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
+from .compose import FIT, LOOK, Box, build_graph, measure
 from .config import (
     BGM_FADE_IN,
     BGM_FADE_OUT,
@@ -24,11 +25,13 @@ from .config import (
 )
 from .errors import VideoError
 from .ffmpeg import Runner, concat_line, ffmpeg, filter_escape
+from .motion import Motion
+from .shots import Shot
 from .workdir import WorkDir
 
-FIT = f"scale=1952:1098,crop={FRAME_W}:{FRAME_H}"
 # 静态的质感先烘进一张 YUV jpg，逐帧只算摆动、颗粒和字幕（比逐帧全算快约 20%）。
-STILL_LOOK = f"{FIT},rgbashift=rh=-3:bh=3,gblur=sigma=0.6,eq=saturation=1.05,vignette=PI/6"
+# 分层镜头每帧画面都在变，质感只能逐帧算。
+STILL_LOOK = f"{FIT},{LOOK}"
 GRAIN = "noise=alls=8:allf=t+u"
 FADE_TAIL = 0.25
 
@@ -41,6 +44,8 @@ class ClipJob:
     frames: int
     out: Path
     is_last: bool
+    motion: Motion | None = None
+    layers: tuple[tuple[str, Path], ...] = ()  # 分层镜头的（图层名，图片）
 
 
 def sway_filter() -> str:
@@ -55,7 +60,12 @@ def sway_filter() -> str:
 
 
 def clip_filter(start_frame: int, frames: int, subs: str | Path, is_last: bool) -> str:
-    vf = (f"{sway_filter()},{GRAIN},setpts=PTS-STARTPTS+{start_frame}/{FPS}/TB,"
+    return f"{sway_filter()},{_tail(start_frame, frames, subs, is_last)}"
+
+
+def _tail(start_frame: int, frames: int, subs: str | Path, is_last: bool) -> str:
+    """摆动或合成之后的共同部分：颗粒、按时间线位置烧字幕、最后一镜的 CRT 关机。"""
+    vf = (f"{GRAIN},setpts=PTS-STARTPTS+{start_frame}/{FPS}/TB,"
           f"subtitles={filter_escape(subs)},setpts=PTS-STARTPTS")
     if is_last:
         dur = frames / FPS
@@ -67,10 +77,11 @@ def clip_filter(start_frame: int, frames: int, subs: str | Path, is_last: bool) 
     return vf + ",format=yuv420p"
 
 
-def clip_jobs(work: WorkDir, ids: tuple[str, ...], frames: tuple[int, ...]) -> tuple[ClipJob, ...]:
+def clip_jobs(work: WorkDir, shots: tuple[Shot, ...], frames: tuple[int, ...]) -> tuple[ClipJob, ...]:
     return tuple(
-        ClipJob(sid, work.image(sid), f0, f1 - f0, work.clip(sid), i == len(ids) - 1)
-        for i, (sid, f0, f1) in enumerate(zip(ids, frames, frames[1:]))
+        ClipJob(s.id, work.image(s.id), f0, f1 - f0, work.clip(s.id), i == len(shots) - 1, s.motion,
+                tuple((layer.name, work.layer(s.id, layer.name)) for layer in s.motion.layers) if s.motion else ())
+        for i, (s, f0, f1) in enumerate(zip(shots, frames, frames[1:]))
     )
 
 
@@ -79,7 +90,27 @@ def part_path(path: Path) -> Path:
     return path.with_name(f"{path.stem}.part{path.suffix}")
 
 
+def _render_layered(job: ClipJob, subs: Path, config: VideoConfig, runner: Runner) -> None:
+    layers = dict(job.layers)
+
+    def probe(name: str, key: tuple[int, int, int]) -> Box:
+        return measure(layers[name], key, job.out.with_name(f"{job.shot_id}.{name}.ppm"), runner)
+
+    dur = job.frames / FPS
+    graph = build_graph(job.motion, layers, job.image, dur, probe)
+    inputs = [arg for path in graph.inputs
+              for arg in ("-f", "image2", "-loop", "1", "-framerate", str(FPS), "-t", f"{dur:.3f}", "-i", path)]
+    full = f"{graph.graph};[comp]{LOOK},{_tail(job.start_frame, job.frames, subs, job.is_last)}[v]"
+    part = part_path(job.out)
+    ffmpeg([*inputs, "-filter_complex", full, "-map", "[v]", "-frames:v", str(job.frames),
+            "-c:v", ENCODER, "-b:v", config.video_bitrate, part], runner)
+    os.replace(part, job.out)
+
+
 def render_clip(job: ClipJob, subs: Path, config: VideoConfig, runner: Runner) -> None:
+    if job.motion is not None:
+        _render_layered(job, subs, config, runner)
+        return
     still, part = job.out.with_suffix(".still.jpg"), part_path(job.out)
     # -f image2：图片是从网上下载的，不让 ffmpeg 按内容去猜别的格式。
     ffmpeg(["-f", "image2", "-i", job.image, "-vf", STILL_LOOK, "-frames:v", "1", "-q:v", "2",

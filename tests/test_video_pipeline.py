@@ -271,3 +271,78 @@ def test_unexpected_worker_errors_are_collected_with_the_rest(tmp_path):
         render(work, config, services, out=work.root / "out.mp4", offline=False)
 
     assert "KeyError" in str(exc.value) and work.voice("s01").exists() and work.voice("s02").exists()
+
+
+RISE = {"type": "rise", "layers": {"bg": "桌上一口锅", "puff": "一缕蒸汽"}, "at": [0.5, 0.6]}
+TEXTS3 = dict(zip(("s01", "s02", "s03"), LINES))
+
+
+def _layered(tmp_path, cache=True, **overrides):
+    """三个镜头，s02 是分层镜头（rise：bg + puff）。cache=True 时先完整渲染一遍。"""
+    work, config = _setup(tmp_path)
+    shots = [{"id": f"s0{i}", "line": i, "bg": "蓝色", "scene": "站着"} for i in (1, 2, 3)]
+    shots[1]["motion"] = RISE
+    work.shots.write_text(json.dumps({"style": "风格{bg}：", "shots": shots}, ensure_ascii=False), encoding="utf-8")
+    for sid, text in TEXTS3.items():
+        write_voice(work, sid, spoken(text), source_text=text)
+    services = _services(runner=FakeRunner(durations={"voice.wav": 8.0}), **overrides)
+    if cache:
+        render(work, config, services, out=work.root / "out.mp4", offline=False)
+        services.runner.frames.update({f"{sid}.mp4": n for sid, n in read_manifest(work)["frames"].items()})
+        services.runner.calls.clear()
+        services.generate_image.prompts.clear()
+    return work, config, services
+
+
+def test_render_generates_layers_instead_of_a_whole_frame_for_layered_shots(tmp_path):
+    work, config, services = _layered(tmp_path, cache=False)
+
+    report = render(work, config, services, out=work.root / "out.mp4", offline=False)
+
+    assert sorted(services.generate_image.prompts) == ["s01", "s02:bg", "s02:puff", "s03"]
+    assert services.generate_image.prompts["s02:puff"].endswith("没有任何其他物体。")
+    assert report.media.images_generated == 4 and not work.image("s02").exists()
+    assert work.layer("s02", "bg").exists() and work.layer("s02", "puff").exists()
+    assert set(read_manifest(work)["images"]) == {"s01", "s02:bg", "s02:puff", "s03"}
+    layered = [c for c in services.runner.ffmpeg_calls() if "-filter_complex" in c and ENCODER in c]
+    assert [c[-1] for c in layered] == [str(work.clip("s02")).replace(".mp4", ".part.mp4")]
+
+
+def test_offline_render_names_the_missing_layer(tmp_path):
+    work, config, services = _layered(tmp_path)
+    work.layer("s02", "puff").unlink()
+
+    with pytest.raises(VideoError) as exc:
+        render(work, config, services, out=work.root / "out.mp4", offline=True)
+
+    assert "s02:puff" in str(exc.value)
+
+
+def test_reshoot_one_layer_regenerates_only_that_layer(tmp_path):
+    work, config, services = _layered(tmp_path)
+    old = work.layer("s02", "puff").read_bytes()
+
+    reshoot(work, config, services, ("s02:puff",), out=work.root / "out.mp4", generate=True)
+
+    assert list(services.generate_image.prompts) == ["s02:puff"]
+    assert (work.rejected_dir / "s02-puff.1.jpg").read_bytes() == old
+    assert _encoded(services.runner) == [str(work.clip("s02"))]
+
+
+def test_reshoot_a_layered_shot_regenerates_all_its_layers(tmp_path):
+    work, config, services = _layered(tmp_path)
+
+    reshoot(work, config, services, ("s02", "s02:bg"), out=work.root / "out.mp4", generate=True)
+
+    assert sorted(services.generate_image.prompts) == ["s02:bg", "s02:puff"]
+    assert _encoded(services.runner) == [str(work.clip("s02"))]
+
+
+@pytest.mark.parametrize("ids", [("s01:fg",), ("s02:../x",), ("s02:sky",), ("s09:bg",), ("s02:",)])
+def test_reshoot_rejects_unknown_layers_before_any_call(tmp_path, ids):
+    work, config, services = _layered(tmp_path)
+
+    with pytest.raises(VideoError):
+        reshoot(work, config, services, ids, out=work.root / "out.mp4", generate=True)
+
+    assert services.generate_image.prompts == {} and services.runner.calls == []
