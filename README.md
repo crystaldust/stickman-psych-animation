@@ -103,6 +103,25 @@ uv run stickman draft check drafts/xxx.md                             # 篇幅�
 - 查重：去掉标点后，连续 15 字以上和任一已采集文案相同就报警（退出码 1）。60 字以内、成对的中文引号里的直接引用不计入。没有可比较的文案时退出码为 2。
 - `analysis/`、`library/`、`drafts/` 是我们自己的工作成果，纳入 git；`data/` 不入库。
 
+## 做视频
+
+定稿的草稿 → 1–3 分钟的火柴人视频。出图用火山方舟 Seedream，配音用豆包 seed-audio（复刻音色），剪辑用本机 ffmpeg。
+
+```bash
+uv run stickman video init drafts/20261014-jie-jing.md       # 生成 data/videos/<slug>/：narration.txt + 待填写的 shots.json
+# 在 Claude Code 里按每条「> 画面」填好 shots.json 的 bg / scene
+uv run stickman video check data/videos/20261014-jie-jing     # 校验分镜；没填完的不会去调付费接口
+uv run stickman video render data/videos/20261014-jie-jing    # 补齐缺的图和配音（付费），渲染、拼接、混 BGM
+uv run stickman video reshoot data/videos/20261014-jie-jing s02 s07   # 只重做这几张图和这几段
+```
+
+- API key 只从 macOS 钥匙串读：`ark-api-key`（出图）、`volc-tts-key`（配音）。
+- 已有的 `img/sNN.jpg`、`voice/sNN.mp3(.json)` 直接复用：中途失败重跑只补缺的；`render --offline` 完全不调接口。
+- 旁白改过以后，对应镜头的旧配音会被拒绝（不会自动重新配音计费），删掉 `voice/<id>.mp3` 再跑。
+- `reshoot` 要求时间线和编码参数和上次 `render` 一致（记在 `render.json`），旧图移到 `img_rejected/`；`--no-generate` 只重渲不出图。
+- 参考图、音色、BGM 等默认值在 `src/stickman/video/config.py`，单条视频可在工作目录放 `video.json` 覆盖（只接受已知参数）。
+- 多音字在 `src/stickman/video/text.py` 的 `HOMOPHONES` 里用同音字替换，只影响配音，字幕保留原文。
+
 ## 开发
 
 ```bash

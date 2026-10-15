@@ -7,6 +7,7 @@
 - 文档在 `docs/`：调研结论 `docs/research-stickman-workflow.md`，ECC 流程复盘 `docs/ecc-orchestration-retro.md`。
 - 目录约定：包名 `stickman`，统一入口 `stickman <子命令>`（见 `src/stickman/cli.py` 的 `COMMANDS`）。采集在 `src/stickman/collect/<平台>/`，新功能按领域放在 `src/stickman/<领域>/`。
 - 已有工具：`stickman bili`（别名 `bili-collect`，代码在 `src/stickman/collect/bilibili/`），采集 B 站 up 主的视频元数据、音视频，并用 mlx-whisper 转写文案，用法见 `README.md`。
+- `stickman video init / check / render / reshoot`：把定稿文案做成视频，见下面「视频流水线」。
 
 ## 开发流程（默认遵守，不需要用户每次提醒）
 
@@ -34,24 +35,26 @@
 - yt-dlp 会把 cookie jar 回写到 `cookiefile`，所以只能传一份临时副本给它，不能传用户的原始文件。
 - 断点续跑依赖「最终产物文件名」，中间文件（`.part`、`.temp`、`.fNNN`）不能当作已完成。
 
-## 目标流水线
+## 视频流水线（stickman video，代码在 `src/stickman/video/`）
 
 ```
-配音.mp3
-  → Whisper 生成带时间戳的文本
-  → Claude 按句子生成提示词
-  → Higgsfield CLI 批量出图（文件名 = 时间戳）
-  → ffmpeg 或 Remotion 按时间戳拼接
-  → 成片.mp4
+定稿草稿 drafts/*.md
+  → stickman video init：narration.txt（一行一句）+ shots.json 骨架（每条「> 画面」一个镜头）
+  → Claude 填 shots.json 的 bg / scene（人物身体结构要写明，情绪靠头部角度和表情，不写「缩着肩膀」这类会让人体变形的词）
+  → stickman video check
+  → stickman video render：Seedream 出图 ∥ seed-audio 配音 → 按词级时间戳裁停顿、生成字幕 → 每镜一段（摆动 + 质感 + 烧字幕）→ 无损拼接 + 混 BGM
+  → 看联系表挑出问题镜头 → stickman video reshoot <dir> <id>...
+  → 成片 data/videos/<slug>/<slug>.mp4
 ```
 
-人负责选题、脚本、录音；机器负责第 4–7 步（时间戳 → 出图 → 开头动画 → 剪辑）。
+人负责选题、定稿、听多音字；机器负责分镜到成片。
 
 ## 约定
 
-- 画风：MS Paint 风格的粗糙火柴人，白色背景，16:9，每 2–3 秒换一张图。
-- 素材文件名用时间戳（例如 `00-07.png` 表示 0 分 7 秒），这是自动对位的前提。
-- 调用付费 API（Higgsfield、Flow 等）会消耗 credits，批量生成前先小批量试跑并报告消耗。
+- 试点阶段每条 1–3 分钟（不是 8–15 分钟长视频）；画风是涂鸦火柴人，参考图 `data/pilot/02-doodle.jpg`，16:9，人物约占画面 1/3。默认参数在 `src/stickman/video/config.py`。
+- 画面里不能有文字（字幕会和乱码字母打架），提示词里写明。
+- 配音读错的多音字加到 `src/stickman/video/text.py` 的 `HOMOPHONES`，只影响配音，字幕保留原文。
+- 调用付费 API（Seedream、seed-audio 等）前先小批量试跑并报告消耗；`render` 结束时会打印本次出图张数和配音计费秒数。
 - 素材、成片等大文件不提交 git。
 
 ## ECC
