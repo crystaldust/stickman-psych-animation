@@ -12,7 +12,7 @@ from pathlib import Path
 from .config import FPS, FRAME_H, FRAME_W
 from .errors import VideoError
 from .ffmpeg import Runner, ffmpeg
-from .motion import GREEN, MAGENTA, Motion
+from .motion import GREEN, MAGENTA, Motion, chroma_distance
 
 FIT = f"scale=1952:1098,crop={FRAME_W}:{FRAME_H}"
 LOOK = "rgbashift=rh=-3:bh=3,gblur=sigma=0.6,eq=saturation=1.05,vignette=PI/6"
@@ -27,7 +27,7 @@ BOB_PX, BOB_PERIOD = 4, 0.55  # scroll：随车颠簸
 BREATH = "2*sin(2*PI*t/3)"  # scale：人物缓慢呼吸起伏（像素）
 CHAR_H = FRAME_H // 3  # scale：人物统一的高度
 PUFF_H, PUFF_RISE, PUFF_PERIOD, PUFF_SWAY = 130, 45, 2.4, 6  # rise：一缕蒸汽的高度、上升距离、周期、左右飘
-GLOW_TINT, GLOW_PERIOD = "0xFFF4C0", 2.6
+GLOW_TINT, GLOW_PERIOD, GLOW_MAX_TOLERANCE = "0xFFF4C0", 2.6, 0.16
 
 
 @dataclass(frozen=True)
@@ -150,10 +150,12 @@ def _rise(motion: Motion, probe: Probe) -> str:
 
 
 def _glow(motion: Motion) -> str:
+    # 容差不超过颜色到中性色距离的一半：白头、灰色物体永远落在容差外，不会跟着亮。
+    tolerance = min(GLOW_MAX_TOLERANCE, round(chroma_distance(motion.param("color")) / 2, 3))
     colour = "0x" + motion.param("color")[1:].upper()
     return ";".join([
         f"[0:v]{FIT},split[bg][m0]",
-        f"[m0]scale={PROBE_W}:{PROBE_H},format=yuva444p,chromakey={colour}:0.16:0.02,alphaextract,negate,"
+        f"[m0]scale={PROBE_W}:{PROBE_H},format=yuva444p,chromakey={colour}:{tolerance:g}:0.02,alphaextract,negate,"
         "gblur=sigma=6[mask]",
         f"color=c={GLOW_TINT}:s={PROBE_W}x{PROBE_H}:r={FPS},format=yuva444p[col]",
         "[col][mask]alphamerge,geq=lum='lum(X,Y)':cb='cb(X,Y)':cr='cr(X,Y)'"

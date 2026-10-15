@@ -1,7 +1,7 @@
 import pytest
 
 from stickman.video.config import LAYER_STYLE
-from stickman.video.motion import GREEN, MAGENTA, layer_prompt, max_layered, parse_motion
+from stickman.video.motion import GREEN, MAGENTA, chroma_distance, layer_prompt, max_layered, parse_motion
 
 SCROLL = {"type": "scroll", "layers": {"bg": "车厢内部，右边一扇大窗户", "scenery": "田野和电线杆", "fg": "两个火柴人并排坐着"}}
 SCALE = {"type": "scale", "layers": {"bg": "空房间", "prop": "一个白色粉笔圆圈", "fg": "一个火柴人站着"}, "from": 0.6, "to": 0.16}
@@ -54,6 +54,8 @@ def test_optional_params_get_defaults_and_given_ones_are_kept():
         ({**RISE, "at": [0.5]}, "at"),
         ({**RISE, "at": [0.5, 1.5]}, "at"),
         ({**GLOW, "color": "yellow"}, "color"),
+        ({**GLOW, "color": "#F0F0F0"}, "color"),
+        ({**GLOW, "color": "#FAF8E8"}, "color"),
         ({**GLOW, "layers": {"bg": "x"}}, "layers"),
     ],
 )
@@ -123,3 +125,8 @@ def test_points_are_stored_as_tuples_so_defaults_cannot_be_mutated():
 
     assert scale.param("feet") == (0.5, 0.79) and rise.param("at") == (0.47, 0.64)
     assert parse_motion(SCALE, "s02")[0].param("feet") is not None
+
+
+@pytest.mark.parametrize("colour, low, high", [("#FFFFFF", 0, 0.01), ("#F9F7A6", 0.1, 0.13), ("#F9E440", 0.2, 0.4)])
+def test_chroma_distance_measures_how_far_a_colour_is_from_white_or_grey(colour, low, high):
+    assert low <= chroma_distance(colour) <= high

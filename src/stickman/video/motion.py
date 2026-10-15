@@ -4,6 +4,7 @@
 再各按自己的规则动（compose.py）。配方是封闭的几种，每种的图层和参数都是固定的。
 """
 
+import math
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -28,6 +29,7 @@ _CUTOUT = "只画上面写的东西，不画地面，不画影子。除此之外
 
 MIN_SPEED, MAX_SPEED = 100, 3000
 MAX_LAYER_TEXT = 500
+MIN_GLOW_CHROMA = 0.08
 
 
 REQUIRED = object()
@@ -63,8 +65,18 @@ def _speed(value: Any) -> bool:
     return _number(value) and MIN_SPEED <= value <= MAX_SPEED
 
 
+def chroma_distance(colour: str) -> float:
+    """颜色到中性色（白、灰、黑）的色度距离，和 ffmpeg chromakey 的算法一致（BT.601 的 U/V，0–1）。"""
+    r, g, b = (int(colour[i:i + 2], 16) for i in (1, 3, 5))
+    u = ((-38 * r - 74 * g + 112 * b + 128) >> 8) + 128
+    v = ((112 * r - 94 * g - 18 * b + 128) >> 8) + 128
+    return math.hypot(u - 128, v - 128) / math.hypot(255, 255)
+
+
 def _colour(value: Any) -> bool:
-    return isinstance(value, str) and re.fullmatch(r"#[0-9A-Fa-f]{6}", value) is not None
+    # 太淡的颜色和白色、灰色分不开：glow 会把白头、灰色物体一起点亮。
+    return (isinstance(value, str) and re.fullmatch(r"#[0-9A-Fa-f]{6}", value) is not None
+            and chroma_distance(value) >= MIN_GLOW_CHROMA)
 
 
 RECIPES: dict[str, Recipe] = {
@@ -81,7 +93,7 @@ RECIPES: dict[str, Recipe] = {
     "rise": Recipe((("bg", BACKDROP, None), ("puff", CUTOUT, MAGENTA)),
                    (Param("at", _point, "升起的起点 [x, y]，都是 0–1 的画面比例"),)),
     # 整张图里某种颜色的区域（如两个圈的重叠处）缓慢明暗呼吸，不需要额外出图。
-    "glow": Recipe((), (Param("color", _colour, "要发光的颜色，#RRGGBB"),)),
+    "glow": Recipe((), (Param("color", _colour, "要发光的颜色，#RRGGBB，不能太接近白色或灰色"),)),
 }
 
 

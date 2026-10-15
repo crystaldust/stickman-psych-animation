@@ -162,3 +162,12 @@ def test_unknown_recipe_kind_is_an_error_not_a_silent_fallback():
 
     with pytest.raises(VideoError):
         build_graph(motion, {}, Path("/i.jpg"), 4.0, lambda n, k: Box(0, 0, 10, 10))
+
+
+def test_glow_tolerance_stays_short_of_white_for_pale_colours():
+    # 白头、灰色物体的色度在中性点；容差必须小于颜色到中性点的距离，否则它们会跟着一起亮。
+    pale = build_graph(_motion({"type": "glow", "color": "#F9F7A6"}), {}, Path("/i.jpg"), 4.0, lambda n, k: None)
+    vivid = build_graph(_motion({"type": "glow", "color": "#F9E440"}), {}, Path("/i.jpg"), 4.0, lambda n, k: None)
+
+    assert "chromakey=0xF9F7A6:0.051:" in pale.graph
+    assert "chromakey=0xF9E440:0.108:" in vivid.graph
