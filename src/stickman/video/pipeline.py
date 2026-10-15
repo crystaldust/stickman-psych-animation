@@ -1,0 +1,271 @@
+"""整条流水线：分镜 → 出图 ∥ 配音 → 拼配音、算字幕 → 渲染片段 → 拼接混音。
+
+已有的图和配音直接复用，所以失败后重跑只会补缺的那几个。配音只要和旁白对不上就报错，
+不会悄悄重新生成——那是要计费的。
+"""
+
+import json
+import os
+import time
+from collections.abc import Callable, Iterator
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
+from contextlib import contextmanager
+from dataclasses import dataclass
+from pathlib import Path
+
+from . import images, tts
+from .audio import Segment, VoiceTimeline, build_voice, missing_voice, read_meta
+from .config import ENCODER, FPS, KEYCHAIN_IMAGE, KEYCHAIN_TTS, VideoConfig
+from .errors import VideoError
+from .ffmpeg import Runner, count_frames, run_command
+from .keychain import read_secret
+from .render import ClipJob, clip_jobs, final_mix, image_digest, read_manifest, render_clips, write_manifest
+from .shots import ShotSpec, load_spec, shot_lines
+from .subtitles import ass_document
+from .timeline import clip_frames
+from .workdir import WorkDir, safe_id
+
+
+@dataclass(frozen=True)
+class Services:
+    """外部依赖，测试时整组替换。"""
+    runner: Runner = run_command
+    read_secret: Callable[[str], str] = read_secret
+    synthesize: Callable[..., tts.TtsResult] = tts.synthesize
+    generate_image: Callable[..., None] = images.generate_image
+
+
+@dataclass(frozen=True)
+class MediaReport:
+    images_generated: int = 0
+    billed_audio_s: float = 0.0
+
+
+@dataclass(frozen=True)
+class MediaInputs:
+    """调接口前要准备好的东西：参考图和 key。先准备好，再动任何文件。"""
+    ref_url: str = ""
+    img_key: str = ""
+    tts_key: str = ""
+
+
+@dataclass(frozen=True)
+class RenderReport:
+    out: Path
+    total: float
+    media: MediaReport
+    timings: dict[str, float]
+
+
+@contextmanager
+def _stage(timings: dict[str, float], name: str) -> Iterator[None]:
+    print(f"[{name}]", flush=True)
+    start = time.monotonic()
+    yield
+    timings[name] = round(time.monotonic() - start, 1)
+    print(f"[{name}] {timings[name]}s", flush=True)
+
+
+def _existing(value: str, kind: str) -> Path:
+    path = Path(value)
+    if not path.is_file():
+        raise VideoError(f"找不到{kind}：{path}")
+    return path
+
+
+def _stale_voices(work: WorkDir, segments: tuple[Segment, ...]) -> tuple[str, ...]:
+    """已有配音里，生成时的旁白和现在不一样的镜头。
+
+    旧流水线生成的配音没有 source_text，这里放行；之后 char_times 逐字比对内容，对不上同样会报错。
+    """
+    cached = set(s for s, _ in segments) - set(missing_voice(work, tuple(s for s, _ in segments)))
+    return tuple(
+        sid for sid, lines in segments
+        if sid in cached and read_meta(work, sid).get("source_text") not in (None, "".join(lines))
+    )
+
+
+def _voice_job(services: Services, text: str, key: str, config: VideoConfig, work: WorkDir, sid: str) -> float:
+    result = services.synthesize(text, key, config, label=f"配音 {sid}")
+    tts.save_voice(result, work.voice(sid), work.voice_meta(sid))
+    return result.billed_s
+
+
+def _collect(jobs: dict[Future, tuple[str, str]], t0: float) -> MediaReport:
+    made, billed, errors = 0, 0.0, []
+    for future in as_completed(jobs):
+        kind, sid = jobs[future]
+        try:
+            result = future.result()
+        except Exception as exc:  # noqa: BLE001 - 每个任务的失败都要汇总报告，不能让一个异常吞掉其余结果
+            errors.append(str(exc) if isinstance(exc, (VideoError, OSError)) else f"{kind} {sid}：{type(exc).__name__}: {exc}")
+            print(f"  失败 {exc}", flush=True)
+            continue
+        made, billed = (made + 1, billed) if kind == "img" else (made, billed + result)
+        print(f"  {kind} {sid} 完成（t+{time.monotonic() - t0:.0f}s）", flush=True)
+    if errors:
+        raise VideoError(f"{len(errors)} 个任务失败（成功的已保存，重跑只补缺的）：\n  " + "\n  ".join(errors))
+    return MediaReport(made, billed)
+
+
+def media_inputs(config: VideoConfig, services: Services, need_img: bool, need_tts: bool) -> MediaInputs:
+    ref_url = images.ref_data_url(Path(config.ref_image)) if need_img else ""
+    return MediaInputs(ref_url,
+                       services.read_secret(KEYCHAIN_IMAGE) if need_img else "",
+                       services.read_secret(KEYCHAIN_TTS) if need_tts else "")
+
+
+def media_stage(work: WorkDir, spec: ShotSpec, segments: tuple[Segment, ...], config: VideoConfig,
+                services: Services, image_ids: tuple[str, ...], inputs: MediaInputs | None = None) -> MediaReport:
+    """补齐缺的图（限 image_ids 内）和缺的配音；key 只在确实要调接口时读，且只在主线程读一次。"""
+    stale = _stale_voices(work, segments)
+    if stale:
+        raise VideoError(f"这些镜头的配音和现在的旁白对不上：{', '.join(stale)}。"
+                         "确认要重新配音（会计费）就删掉对应的 voice/<id>.mp3 再运行")
+    need_img = tuple(s for s in spec.shots if s.id in image_ids and not work.image(s.id).is_file())
+    no_voice = set(missing_voice(work, tuple(s for s, _ in segments)))
+    need_tts = tuple((sid, "".join(lines)) for sid, lines in segments if sid in no_voice)
+    if not need_img and not need_tts:
+        return MediaReport()
+    inputs = inputs or media_inputs(config, services, bool(need_img), bool(need_tts))
+    work.img_dir.mkdir(parents=True, exist_ok=True)
+    t0 = time.monotonic()
+    pools = (ThreadPoolExecutor(config.img_workers), ThreadPoolExecutor(config.tts_workers))
+    try:
+        jobs = {pools[0].submit(services.generate_image, spec.prompt(s), inputs.ref_url, inputs.img_key, config,
+                                work.image(s.id), label=f"出图 {s.id}"): ("img", s.id) for s in need_img}
+        jobs |= {pools[1].submit(_voice_job, services, text, inputs.tts_key, config, work, sid): ("tts", sid)
+                 for sid, text in need_tts}
+        return _collect(jobs, t0)
+    except KeyboardInterrupt:
+        # Ctrl-C：取消还没开始的付费任务，只等正在进行的那几个结束。
+        for pool in pools:
+            pool.shutdown(wait=False, cancel_futures=True)
+        raise
+    finally:
+        for pool in pools:
+            pool.shutdown()
+
+
+def _require_cached(work: WorkDir, spec: ShotSpec, segments: tuple[Segment, ...],
+                    skip_images: tuple[str, ...] = ()) -> MediaReport:
+    """不调接口时：缺什么一次列出来。"""
+    stale = _stale_voices(work, segments)
+    no_img = [sid for sid in spec.ids() if sid not in skip_images and not work.image(sid).is_file()]
+    no_voice = missing_voice(work, spec.ids())
+    if stale or no_img or no_voice:
+        raise VideoError(f"素材不全：缺图 {no_img or '无'}；缺配音 {list(no_voice) or '无'}；"
+                         f"配音过期 {list(stale) or '无'}。先运行 render 补齐")
+    return MediaReport()
+
+
+def _voice(work: WorkDir, segments: tuple[Segment, ...], runner: Runner) -> VoiceTimeline:
+    timeline = build_voice(work, segments, runner)
+    work.subs.write_text(ass_document(timeline.events), encoding="utf-8")
+    return timeline
+
+
+def _frame_map(ids: tuple[str, ...], frames: tuple[int, ...]) -> dict[str, int]:
+    return {sid: b - a for sid, a, b in zip(ids, frames, frames[1:])}
+
+
+def render(work: WorkDir, config: VideoConfig, services: Services, out: Path, offline: bool) -> RenderReport:
+    spec, lines = load_spec(work)
+    segments, ids = shot_lines(spec, lines), spec.ids()
+    bgm = _existing(config.bgm, " BGM")
+    timings: dict[str, float] = {}
+    t_all = time.monotonic()
+    with _stage(timings, "media"):
+        media = (_require_cached(work, spec, segments) if offline
+                 else media_stage(work, spec, segments, config, services, ids))
+    with _stage(timings, "voice"):
+        timeline = _voice(work, segments, services.runner)
+    frames = clip_frames(timeline.shot_starts, timeline.total)
+    with _stage(timings, "clips"):
+        render_clips(clip_jobs(work, ids, frames), work.subs, config, services.runner)
+    write_manifest(work, config, _frame_map(ids, frames), {sid: image_digest(work.image(sid)) for sid in ids})
+    with _stage(timings, "final"):
+        out.parent.mkdir(parents=True, exist_ok=True)
+        final_mix(work, ids, timeline.total, bgm, out, services.runner)
+    timings["total"] = round(time.monotonic() - t_all, 1)
+    report = {"timings_s": timings, "video_s": round(timeline.total, 1),
+              "images_generated": media.images_generated, "billed_audio_s": round(media.billed_audio_s, 1)}
+    work.timings.write_text(json.dumps(report, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    return RenderReport(out, timeline.total, media, timings)
+
+
+def _known_ids(spec: ShotSpec, shot_ids: tuple[str, ...]) -> tuple[str, ...]:
+    unknown = [sid for sid in shot_ids if safe_id(sid) not in spec.ids()]
+    if unknown:
+        raise VideoError(f"shots.json 里没有这些镜头：{', '.join(unknown)}")
+    return tuple(dict.fromkeys(shot_ids))
+
+
+def _check_encoding(manifest: dict, config: VideoConfig) -> None:
+    current = {"fps": FPS, "encoder": ENCODER, "bitrate": config.video_bitrate}
+    changed = [k for k, v in current.items() if manifest.get(k) != v]
+    if changed:
+        raise VideoError(f"编码参数和上次渲染不同（{', '.join(changed)}），片段没法无损拼接，请运行 render")
+
+
+def _reject(work: WorkDir, sid: str, rendered_digest: str | None) -> None:
+    """上次成片用的图移到 img_rejected/<id>.<n>.jpg，不删。
+
+    和上次成片不是同一张的（上一次 reshoot 中途失败前已经生成好的新图）不动，免得重跑时再付一次钱。
+    """
+    image = work.image(sid)
+    if not image.is_file() or (rendered_digest is not None and image_digest(image) != rendered_digest):
+        return
+    work.rejected_dir.mkdir(parents=True, exist_ok=True)
+    n = 1
+    while (work.rejected_dir / f"{sid}.{n}.jpg").exists():
+        n += 1
+    os.replace(image, work.rejected_dir / f"{sid}.{n}.jpg")
+
+
+def _check_new_clips(jobs: tuple[ClipJob, ...], runner: Runner) -> None:
+    for job in jobs:
+        n = count_frames(job.out, runner)
+        if n != job.frames:
+            raise VideoError(f"{job.shot_id}：新片段有 {n} 帧，应该是 {job.frames} 帧，请运行 render")
+
+
+def _timeline_unchanged(work: WorkDir, manifest: dict, all_ids: tuple[str, ...],
+                        segments: tuple[Segment, ...], runner: Runner) -> tuple[VoiceTimeline, tuple[int, ...]]:
+    timeline = _voice(work, segments, runner)
+    frames = clip_frames(timeline.shot_starts, timeline.total)
+    moved = [sid for sid, n in _frame_map(all_ids, frames).items() if manifest["frames"].get(sid) != n]
+    if moved:
+        raise VideoError(f"时间线和上次渲染不同（{', '.join(moved)}），不能只重渲部分镜头，请运行 render")
+    return timeline, frames
+
+
+def reshoot(work: WorkDir, config: VideoConfig, services: Services, shot_ids: tuple[str, ...],
+            out: Path, generate: bool) -> RenderReport:
+    """只重做指定镜头：（可选）重新出图 → 重渲这些片段 → 重新拼接混音。时间线和编码参数必须和上次一致。"""
+    spec, lines = load_spec(work)
+    ids, all_ids, segments = _known_ids(spec, shot_ids), spec.ids(), shot_lines(spec, lines)
+    manifest = read_manifest(work)
+    _check_encoding(manifest, config)
+    bgm = _existing(config.bgm, " BGM")
+    _require_cached(work, spec, segments, skip_images=ids if generate else ())
+    timings: dict[str, float] = {}
+    with _stage(timings, "voice"):
+        timeline, frames = _timeline_unchanged(work, manifest, all_ids, segments, services.runner)
+    media = MediaReport()
+    if generate:
+        inputs = media_inputs(config, services, need_img=True, need_tts=False)  # 参考图、key 有问题就在动文件之前失败
+        for sid in ids:
+            _reject(work, sid, manifest.get("images", {}).get(sid))
+        with _stage(timings, "media"):
+            media = media_stage(work, spec, segments, config, services, ids, inputs)
+    jobs = tuple(j for j in clip_jobs(work, all_ids, frames) if j.shot_id in ids)
+    with _stage(timings, "clips"):
+        render_clips(jobs, work.subs, config, services.runner)
+        _check_new_clips(jobs, services.runner)
+    digests = {**manifest.get("images", {}), **{sid: image_digest(work.image(sid)) for sid in ids}}
+    write_manifest(work, config, _frame_map(all_ids, frames), digests)
+    with _stage(timings, "final"):
+        out.parent.mkdir(parents=True, exist_ok=True)
+        final_mix(work, all_ids, timeline.total, bgm, out, services.runner)
+    return RenderReport(out, timeline.total, media, timings)

@@ -5,6 +5,7 @@ import sys
 from collections.abc import Callable
 
 from .collect.bilibili import cli as bili_cli
+from .video import cli as video_cli
 from .writing import cli as writing_cli
 
 Handler = Callable[[list[str]], int]
@@ -14,12 +15,17 @@ def _run_bili(argv: list[str]) -> int:
     return bili_cli.main(argv, prog="stickman bili")
 
 
+def _run_video(argv: list[str]) -> int:
+    return video_cli.main(argv, prog="stickman video")
+
+
 COMMANDS: dict[str, tuple[str, Handler]] = {
     "bili": ("B 站采集：list / fetch / collect（同 bili-collect）", _run_bili),
     "corpus": ("读取已采集的文案：show / list / export", lambda argv: writing_cli.corpus_main(argv)),
     "analysis": ("文案分析结果：save / show / list", lambda argv: writing_cli.analysis_main(argv)),
     "library": ("出处库：build / show", lambda argv: writing_cli.library_main(argv)),
     "draft": ("草稿查重：check", lambda argv: writing_cli.draft_main(argv)),
+    "video": ("做视频：init / check / render / reshoot", _run_video),
 }
 
 

@@ -1,0 +1,103 @@
+"""一条视频的工作目录：data/videos/<slug>/ 下各产物的固定位置，以及路径安全检查。"""
+
+import re
+from dataclasses import dataclass
+from pathlib import Path
+
+from .errors import VideoError
+
+_SAFE_NAME = re.compile(r"[a-z0-9][a-z0-9_-]{0,63}")
+
+
+def _safe(value: str, kind: str) -> str:
+    if not _SAFE_NAME.fullmatch(value):
+        raise VideoError(f"{kind}「{value}」不合法：只能用小写字母、数字、- 和 _，且以字母或数字开头，最长 64 个字符")
+    return value
+
+
+def safe_slug(value: str) -> str:
+    return _safe(value, "目录名")
+
+
+def safe_id(value: str) -> str:
+    return _safe(value, "镜头 id")
+
+
+def inside_project(value: str | Path) -> Path:
+    """要写入的路径必须在项目目录（当前目录）内，避免被引导去覆盖别处的文件。"""
+    root = Path.cwd().resolve()
+    resolved = (root / value).resolve()
+    if not resolved.is_relative_to(root):
+        raise VideoError(f"路径必须在项目目录内：{value}")
+    return resolved
+
+
+@dataclass(frozen=True)
+class WorkDir:
+    root: Path
+
+    @property
+    def narration(self) -> Path:
+        return self.root / "narration.txt"
+
+    @property
+    def shots(self) -> Path:
+        return self.root / "shots.json"
+
+    @property
+    def img_dir(self) -> Path:
+        return self.root / "img"
+
+    @property
+    def rejected_dir(self) -> Path:
+        return self.root / "img_rejected"
+
+    @property
+    def voice_dir(self) -> Path:
+        return self.root / "voice"
+
+    @property
+    def trim_dir(self) -> Path:
+        return self.root / "voice_trim"
+
+    @property
+    def clip_dir(self) -> Path:
+        return self.root / "clips"
+
+    @property
+    def voice_wav(self) -> Path:
+        return self.root / "voice.wav"
+
+    @property
+    def subs(self) -> Path:
+        return self.root / "subs.ass"
+
+    @property
+    def clip_list(self) -> Path:
+        return self.root / "clips.txt"
+
+    @property
+    def manifest(self) -> Path:
+        return self.root / "render.json"
+
+    @property
+    def timings(self) -> Path:
+        return self.root / "timings.json"
+
+    def image(self, shot_id: str) -> Path:
+        return self.img_dir / f"{safe_id(shot_id)}.jpg"
+
+    def voice(self, shot_id: str) -> Path:
+        return self.voice_dir / f"{safe_id(shot_id)}.mp3"
+
+    def voice_meta(self, shot_id: str) -> Path:
+        return self.voice_dir / f"{safe_id(shot_id)}.mp3.json"
+
+    def trimmed(self, shot_id: str) -> Path:
+        return self.trim_dir / f"{safe_id(shot_id)}.wav"
+
+    def clip(self, shot_id: str) -> Path:
+        return self.clip_dir / f"{safe_id(shot_id)}.mp4"
+
+    def default_output(self) -> Path:
+        return self.root / f"{self.root.name}.mp4"

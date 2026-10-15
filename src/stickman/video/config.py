@@ -1,0 +1,108 @@
+"""视频流水线的参数。
+
+可调的放在 VideoConfig（命令行参数 > 工作目录里的 video.json > 默认值）；
+其余是试点调出来的固定值，改它们会改变成片节奏，所以不开放覆盖。
+"""
+
+import json
+from dataclasses import dataclass, fields, replace
+from pathlib import Path
+from typing import Any
+
+from .errors import VideoError
+
+FPS = 30
+FRAME_W, FRAME_H = 1920, 1080
+
+# 配音拼接：每段只保留词前 HEAD_KEEP、词后 TAIL_KEEP 的静音，镜头之间再插 SHOT_GAP，
+# 所以镜头间实际停顿约 0.75 秒。段内停顿超过上限的从中间裁短。
+LEAD = 0.4
+SHOT_GAP = 0.55
+HEAD_KEEP = 0.05
+TAIL_KEEP = 0.15
+SENTENCE_PAUSE = 0.6
+COMMA_PAUSE = 0.35
+WORD_PAUSE = 0.35
+TAIL = 1.8
+
+# 字幕：间隔短于 SUB_HOLD 的两条字幕首尾相接，避免闪烁。
+SUB_HOLD = 0.6
+SUB_EXTRA = 0.3
+LAST_SUB_EXTRA = 0.5
+MAX_SUB_CHARS = 16
+
+BGM_GAIN_DB = -21
+BGM_FADE_IN = 2.0
+BGM_FADE_OUT = 3.0
+OFF_DUR = 0.8  # 最后一个镜头的 CRT 关机动画时长
+
+ENCODER = "h264_videotoolbox"
+TTS_ENDPOINT = "https://openspeech.bytedance.com/api/v3/tts/create"
+IMAGE_ENDPOINT = "https://ark.cn-beijing.volces.com/api/v3/images/generations"
+IMAGE_SIZE = "1920x1080"
+# 出图接口返回的下载链接只接受这些域名（及其子域名）。
+IMAGE_HOSTS = ("volces.com", "volccdn.com")
+MAX_IMAGE_BYTES = 20 * 1024 * 1024
+TTS_TIMEOUT_S = 300
+IMAGE_TIMEOUT_S = 240
+RETRIES = 3
+RETRY_BASE_S = 5
+KEYCHAIN_IMAGE = "ark-api-key"
+KEYCHAIN_TTS = "volc-tts-key"
+
+TTS_STYLE = "语速平稳，沉稳、克制，像深夜的旁白，句与句之间停顿不要太长。安静的室内，没有背景音乐，没有任何音效。"
+STYLE_PROMPT = (
+    "参考图中火柴人的角色造型和画风：超大的白色圆头、大圆圈小黑点眼睛、简单眉毛、粗细不均的黑色马克笔描边、"
+    "单线条身体四肢。粗糙的手绘火柴人涂鸦，扁平，无阴影无渐变，像 MS Paint 随手画的。16:9 横幅，中景构图："
+    "火柴人在画面中只占约三分之一高度，位于画面中部，四周留出空间；画面下方五分之一留空给字幕。"
+    "背景是纯色平涂的{bg}，配极少的简笔涂鸦道具。不要文字，不要写实，不要3D，不要水彩，不要光影渲染。画面内容："
+)
+
+OVERRIDE_FILE = "video.json"
+MAX_WORKERS = 16
+
+
+@dataclass(frozen=True)
+class VideoConfig:
+    ref_image: str = "data/pilot/02-doodle.jpg"
+    speaker: str = "S_VQ18Xi2i2"
+    bgm: str = "data/pilot/bgm/mangguohuami-from3.5.mp3"
+    speech_rate: int = 10
+    image_model: str = "doubao-seedream-5-0-pro-260628"
+    tts_model: str = "seed-audio-1.0"
+    img_workers: int = 8
+    tts_workers: int = 4
+    render_workers: int = 6
+    video_bitrate: str = "4M"
+
+
+_TYPES = {f.name: type(getattr(VideoConfig(), f.name)) for f in fields(VideoConfig)}
+
+
+def _checked(values: dict[str, Any], origin: str) -> dict[str, Any]:
+    unknown = sorted(set(values) - set(_TYPES))
+    if unknown:
+        raise VideoError(f"{origin} 里有不认识的参数：{', '.join(unknown)}")
+    for name, value in values.items():
+        expected = _TYPES[name]
+        if type(value) is not expected:  # bool 是 int 的子类，这里要严格比较
+            raise VideoError(f"{origin} 的 {name} 应该是 {expected.__name__}")
+        if name.endswith("_workers") and not 1 <= value <= MAX_WORKERS:
+            raise VideoError(f"{origin} 的 {name} 应在 1–{MAX_WORKERS} 之间")
+    return values
+
+
+def load_config(work: Path, overrides: dict[str, Any] | None = None) -> VideoConfig:
+    """默认值 ← <work>/video.json ← 命令行参数（值为 None 的忽略）。"""
+    config = VideoConfig()
+    path = work / OVERRIDE_FILE
+    if path.is_file():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise VideoError(f"{path} 不是合法的 JSON：{exc}") from exc
+        if not isinstance(data, dict):
+            raise VideoError(f"{path} 应该是一个 JSON 对象")
+        config = replace(config, **_checked(data, str(path)))
+    given = {k: v for k, v in (overrides or {}).items() if v is not None}
+    return replace(config, **_checked(given, "命令行参数"))
