@@ -8,6 +8,7 @@
 - 目录约定：包名 `stickman`，统一入口 `stickman <子命令>`（见 `src/stickman/cli.py` 的 `COMMANDS`）。采集在 `src/stickman/collect/<平台>/`，新功能按领域放在 `src/stickman/<领域>/`。
 - 已有工具：`stickman bili`（别名 `bili-collect`，代码在 `src/stickman/collect/bilibili/`），采集 B 站 up 主的视频元数据、音视频，并用 mlx-whisper 转写文案，用法见 `README.md`。
 - `stickman video init / check / render / reshoot`：把定稿文案做成视频，见下面「视频流水线」。
+- 英文版：`/translate-script <工作目录>` 意译出 `narration.en.txt`，用户审过后 `render --lang en`，见下面「英文版」。
 
 ## 开发流程（默认遵守，不需要用户每次提醒）
 
@@ -49,6 +50,13 @@
 
 人负责选题、定稿、听多音字；机器负责分镜到成片。
 
+### 英文版
+
+- 面向 YouTube 全球观众，每条视频可以再出一条英文成片 `<slug>.en.mp4`：英文配音用平台音色 `en_male_hades_uranus_bigtts`，语速 `speech_rate_en=5`（都是用户试听后选定；复刻音色说英文不理想，中文的语速 10 套到英文上太赶），字幕烧英文。
+- 中文是主版本：分镜、出图只在中文版做，英文版共用图，不出图。
+- 翻译用 `.claude/skills/translate-script`：一行对应一行、意译成自然英文口语、引用换成核实过的英文原文。**用户审过译文才渲染**，渲染会按镜头计费配音。
+- 译文改过的行，要删掉对应的 `voice_en/<id>.mp3` 再渲染（和中文一样，不会自动重配）。
+
 ### 什么时候分层（填 shots.json 时逐个镜头判断）
 
 默认整张图摆动。只有画面里**有一样东西按自己的逻辑运动、和人物无关，而且这个运动正是这句旁白要表达的**，才加 `motion` 分层：
@@ -64,6 +72,7 @@
 
 ## 约定
 
+- 回复、汇报和调研结果一律用中文输出（代码、命令、字段名保持原样）。
 - 试点阶段每条 1–3 分钟（不是 8–15 分钟长视频）；画风是涂鸦火柴人，参考图 `data/pilot/02-doodle.jpg`，16:9，人物约占画面 1/3。默认参数在 `src/stickman/video/config.py`。
 - 画面里不能有文字（字幕会和乱码字母打架），提示词里写明。
 - 配音读错的多音字加到 `src/stickman/video/text.py` 的 `HOMOPHONES`，只影响配音，字幕保留原文。

@@ -143,6 +143,23 @@ uv run stickman video reshoot data/videos/20261014-jie-jing s02 s07   # 只重�
 - `reshoot <dir> s03` 重出这个镜头的所有图层，`reshoot <dir> s03:fg` 只重出一层（旧图移到 `img_rejected/s03-fg.<n>.jpg`）；改了 `speed` / `at` 等参数用 `--no-generate` 只重渲。
 - 图层按文件名缓存：改了某个镜头的 `type` 或图层描述，旧图层不会自动作废，要对这个镜头跑一次 `reshoot`。
 
+### 英文版（YouTube 全球观众）
+
+同一个工作目录里再出一条英文成片：英文配音（平台音色 `en_male_hades_uranus_bigtts`，语速 `speech_rate_en` 默认 5，比中文的 10 慢）+ 英文字幕，图片和分镜共用中文版。
+
+```bash
+/translate-script data/videos/20261014-dan-xin                      # 在 Claude Code 里意译出 narration.en.txt，人审过再往下走
+uv run stickman video check data/videos/20261014-dan-xin --lang en   # 译文必须一行对应中文一行，不能留汉字
+uv run stickman video render data/videos/20261014-dan-xin --lang en  # 只配英文音（付费），不出图 → 20261014-dan-xin.en.mp4
+uv run stickman video reshoot data/videos/20261014-dan-xin s03 --lang en --no-generate
+```
+
+- 英文版的产物都带 `.en` / `_en`：`narration.en.txt`、`voice_en/`、`clips_en/`、`subs.en.ass`、`render.en.json`、`<slug>.en.mp4`。中文版文件名不变。
+- 图归中文版：英文版缺图会报错（先渲染中文版），`reshoot --lang en` 只能加 `--no-generate`。中文版重出了图，再对英文版 `reshoot --no-generate` 同一个镜头。
+- 每次渲染都会写 `subs.srt` / `subs.en.srt`，上传 YouTube 时可以作为字幕轨（可搜索、可关闭），和烧录字幕互不影响。
+- 英文配音按词返回时间戳，流水线把每个词的时间摊到它的字母上，停顿裁剪和字幕对齐沿用中文的逻辑。字幕按标点断开，过长的按单词折成长度相近的几行（每行最多 42 个字符）。
+- 音色可在 `video.json` 里用 `speaker_en` 覆盖，或者 `--lang en --speaker <id>`。
+
 ## 开发
 
 ```bash
