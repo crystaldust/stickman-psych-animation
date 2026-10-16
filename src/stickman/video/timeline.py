@@ -15,7 +15,7 @@ from .config import (
     WORD_PAUSE,
 )
 from .errors import VideoError
-from .text import apply_homophones, norm, split_sub
+from .lang import Lang
 
 Span = tuple[float, float]
 Event = tuple[float, float, str]
@@ -33,19 +33,19 @@ def word_tokens(meta: Any, label: str) -> tuple[dict, ...]:
     return tokens
 
 
-def char_times(meta: Any, expected: str, label: str) -> tuple[tuple[Span, ...], tuple[dict, ...]]:
-    """每个字的 (开始, 结束) 秒数，以及原始 token（含标点）。
+def char_times(meta: Any, expected: str, label: str, lang: Lang) -> tuple[tuple[Span, ...], tuple[dict, ...]]:
+    """每个字（英文是每个字母）的 (开始, 结束) 秒数，以及原始 token（含标点、空格）。
 
     返回的字幕有时写的是原词（倒放）而不是送去的同音字（到放），所以比较前先做一次替换。
     对不上说明配音是旧的（旁白改过），必须报错，否则字幕会整体错位。
     """
     tokens = word_tokens(meta, label)
-    words = [w for w in tokens if norm(w["text"])]
-    got = apply_homophones("".join(norm(w["text"]) for w in words))
+    words = [w for w in tokens if lang.norm(w["text"])]
+    got = lang.canon("".join(lang.norm(w["text"]) for w in words))
     if got != expected:
         raise VideoError(f"{label}：配音内容和旁白对不上（旁白改过的话，删掉这段配音重新生成）\n"
                          f"  旁白 {expected}\n  配音 {got}")
-    times = tuple((w["start_time"] / 1000, w["end_time"] / 1000) for w in words for _ in norm(w["text"]))
+    times = tuple((w["start_time"] / 1000, w["end_time"] / 1000) for w in words for _ in lang.norm(w["text"]))
     return times, tokens
 
 
@@ -55,14 +55,14 @@ def pause_cap(mark: str) -> float:
     return COMMA_PAUSE if mark else WORD_PAUSE
 
 
-def keep_intervals(tokens: tuple[dict, ...], total: float) -> tuple[Span, ...]:
+def keep_intervals(tokens: tuple[dict, ...], total: float, lang: Lang) -> tuple[Span, ...]:
     """要保留的片段：超过上限的停顿从中间裁短。模型有时在句间留好几秒空白，那是数字静音，裁掉不伤语音。"""
     start: float | None = None
     end = 0.0
     spans: list[Span] = []
     pause_mark = ""
     for tok in tokens:
-        if not norm(tok["text"]):
+        if not lang.norm(tok["text"]):
             pause_mark += tok["text"]
             continue
         a, b = tok["start_time"] / 1000, tok["end_time"] / 1000
@@ -90,13 +90,13 @@ def remap(t: float, spans: tuple[Span, ...]) -> float:
     return acc
 
 
-def shot_events(lines: tuple[str, ...], times: tuple[Span, ...], offset: float) -> tuple[Event, ...]:
+def shot_events(lines: tuple[str, ...], times: tuple[Span, ...], offset: float, lang: Lang) -> tuple[Event, ...]:
     """一个镜头的字幕事件：每块字幕从它第一个字开始，到最后一个字结束。"""
     events: list[Event] = []
     k = 0
     for line in lines:
-        for chunk in split_sub(line):
-            n = len(norm(chunk))
+        for chunk in lang.split_sub(line):
+            n = len(lang.norm(chunk))
             if n:
                 events.append((offset + times[k][0], offset + times[k + n - 1][1], chunk))
                 k += n

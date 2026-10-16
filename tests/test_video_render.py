@@ -91,6 +91,8 @@ def test_final_mix_copies_video_and_mixes_voice_with_bgm(tmp_path):
     graph = cmd[cmd.index("-filter_complex") + 1]
     assert cmd[cmd.index("-c:v") + 1] == "copy"
     assert "volume=-21dB" in graph and "afade=t=out:st=27.000:d=3.0" in graph and "amix=inputs=2" in graph
+    # 配音先统一响度再垫 BGM：英文音色天生比中文轻约 10 dB，不统一就会被 BGM 压住。
+    assert "[1:a]loudnorm=I=-23:" in graph and "aresample=44100" in graph
     assert cmd[-1] == str(part_path(out)) and out.exists()
     listed = work.clip_list.read_text(encoding="utf-8").splitlines()
     assert listed == [f"file '{work.clip('s01')}'", f"file '{work.clip('s02')}'"]

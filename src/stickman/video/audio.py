@@ -7,7 +7,7 @@ from pathlib import Path
 from .config import LEAD, SHOT_GAP, TAIL
 from .errors import VideoError
 from .ffmpeg import Runner, ffmpeg, probe_duration
-from .text import norm
+from .lang import LANGS
 from .timeline import Event, Span, char_times, hold_events, keep_intervals, remap, shot_events
 from .workdir import WorkDir
 
@@ -59,6 +59,7 @@ def _concat(inputs: list[str], out: Path, runner: Runner) -> None:
 
 
 def build_voice(work: WorkDir, segments: tuple[Segment, ...], runner: Runner) -> VoiceTimeline:
+    lang = LANGS[work.lang]
     missing = missing_voice(work, tuple(sid for sid, _ in segments))
     if missing:
         raise VideoError(f"这些镜头还没有配音：{', '.join(missing)}")
@@ -73,10 +74,11 @@ def build_voice(work: WorkDir, segments: tuple[Segment, ...], runner: Runner) ->
             t += SHOT_GAP
         starts.append(t)
         mp3, seg = work.voice(sid), work.trimmed(sid)
-        times, tokens = char_times(read_meta(work, sid), norm("".join(lines)), f"voice/{sid}.mp3")
-        spans = keep_intervals(tokens, probe_duration(mp3, runner))
+        times, tokens = char_times(read_meta(work, sid), lang.norm(lang.joiner.join(lines)),
+                                   f"{work.voice_dir.name}/{sid}.mp3", lang)
+        spans = keep_intervals(tokens, probe_duration(mp3, runner), lang)
         _trim(mp3, spans, seg, runner)
-        events += shot_events(lines, tuple((remap(a, spans), remap(b, spans)) for a, b in times), t)
+        events += shot_events(lines, tuple((remap(a, spans), remap(b, spans)) for a, b in times), t, lang)
         inputs += ["-i", str(seg)]
         t += probe_duration(seg, runner)
     inputs += _silence(TAIL)

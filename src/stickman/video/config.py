@@ -30,7 +30,12 @@ SUB_HOLD = 0.6
 SUB_EXTRA = 0.3
 LAST_SUB_EXTRA = 0.5
 MAX_SUB_CHARS = 16
+MAX_SUB_CHARS_EN = 42
 
+# 配音先统一到这个响度（EBU R128）再垫 BGM：英文平台音色比中文复刻音色轻约 10 dB，
+# 不统一的话 BGM 相对配音的音量就随音色变。中文配音本来就在 -23 左右，统一后基本不变。
+VOICE_LUFS = -23
+VOICE_TRUE_PEAK = -2
 BGM_GAIN_DB = -21
 BGM_FADE_IN = 2.0
 BGM_FADE_OUT = 3.0
@@ -51,6 +56,8 @@ KEYCHAIN_IMAGE = "ark-api-key"
 KEYCHAIN_TTS = "volc-tts-key"
 
 TTS_STYLE = "语速平稳，沉稳、克制，像深夜的旁白，句与句之间停顿不要太长。安静的室内，没有背景音乐，没有任何音效。"
+TTS_STYLE_EN = ("Calm and restrained, like a late-night narrator; steady pace, pauses between sentences not too long. "
+                "Quiet room, no music, no sound effects. ")
 STYLE_PROMPT = (
     "参考图中火柴人的角色造型和画风：超大的白色圆头、大圆圈小黑点眼睛、简单眉毛、粗细不均的黑色马克笔描边、"
     "单线条身体四肢。粗糙的手绘火柴人涂鸦，扁平，无阴影无渐变，像 MS Paint 随手画的。16:9 横幅，中景构图："
@@ -73,8 +80,10 @@ MAX_WORKERS = 16
 class VideoConfig:
     ref_image: str = "data/pilot/02-doodle.jpg"
     speaker: str = "S_VQ18Xi2i2"
+    speaker_en: str = "en_male_hades_uranus_bigtts"
     bgm: str = "data/pilot/bgm/mangguohuami-from3.5.mp3"
     speech_rate: int = 10
+    speech_rate_en: int = 5  # 英文用 10 太赶，用户在豆包网页上试听选定 5
     image_model: str = "doubao-seedream-5-0-pro-260628"
     tts_model: str = "seed-audio-1.0"
     img_workers: int = 8

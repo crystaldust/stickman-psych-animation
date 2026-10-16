@@ -1,11 +1,15 @@
 """视频流水线的测试替身：假的 ffmpeg/ffprobe、配音和出图客户端，以及构造词级时间戳的工具。"""
 
 import json
+import re
 from pathlib import Path
 
 from stickman.video.errors import VideoError
-from stickman.video.text import norm, spoken
+from stickman.video.lang import ZH
 from stickman.video.tts import TtsResult
+
+# 英文配音返回的 token：单词、空格、标点各是一个。
+_EN_TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9'’-]*|\s+|[^A-Za-z0-9\s]")
 
 
 class FakeRunner:
@@ -43,12 +47,15 @@ class FakeRunner:
         return [c for c in self.calls if c[0] == "ffmpeg"]
 
 
-def word_meta(text: str, start_ms: int = 100, step_ms: int = 200, pauses=None, source_text=None) -> dict:
-    """按字生成 seed-audio 风格的字幕元数据；pauses={字序号: 额外停顿毫秒}，标点作为独立 token。"""
+def word_meta(text: str, start_ms: int = 100, step_ms: int = 200, pauses=None, source_text=None, lang=ZH) -> dict:
+    """生成 seed-audio 风格的字幕元数据：中文一个字一个 token，英文一个词一个 token。
+
+    pauses={token 序号（只数有读音的）: 额外停顿毫秒}，标点和空格作为独立 token。
+    """
     pauses = pauses or {}
     words, t, k = [], start_ms, 0
-    for ch in text:
-        if not norm(ch):
+    for ch in (text if lang is ZH else _EN_TOKEN.findall(text)):
+        if not lang.norm(ch):
             words.append({"text": ch, "start_time": t, "end_time": t})
             continue
         t += pauses.get(k, 0)
@@ -62,18 +69,20 @@ def word_meta(text: str, start_ms: int = 100, step_ms: int = 200, pauses=None, s
 
 
 class FakeTts:
-    """按 seed-audio 的格式返回逐字时间戳；fail_texts 里的文本第一次调用时失败。"""
+    """按 seed-audio 的格式返回逐字（英文逐词）时间戳；fail_texts 里的文本第一次调用时失败。"""
 
     def __init__(self, fail_texts=()):
         self.texts: list[str] = []
+        self.langs: list[str] = []
         self.fail_texts = set(fail_texts)
 
-    def __call__(self, text, key, config, label=""):
+    def __call__(self, text, key, config, lang, label=""):
         self.texts.append(text)
+        self.langs.append(lang.code)
         if text in self.fail_texts:
             self.fail_texts.discard(text)
             raise VideoError(f"{label}：HTTP 500 boom")
-        meta = word_meta(spoken(text), source_text=text)
+        meta = word_meta(lang.spoken(text), source_text=text, lang=lang)
         return TtsResult(b"mp3", meta, meta["original_duration"])
 
 
@@ -108,6 +117,7 @@ class FakeSecrets:
 
 
 def write_voice(work, sid: str, text: str, **kwargs) -> None:
+    """kwargs 原样传给 word_meta；英文版传 lang=EN。"""
     work.voice_dir.mkdir(parents=True, exist_ok=True)
     work.voice(sid).write_bytes(b"mp3")
     work.voice_meta(sid).write_text(json.dumps(word_meta(text, **kwargs), ensure_ascii=False), encoding="utf-8")

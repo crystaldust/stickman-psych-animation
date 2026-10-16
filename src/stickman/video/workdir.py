@@ -32,13 +32,31 @@ def inside_project(value: str | Path) -> Path:
     return resolved
 
 
+LANG_CODES = ("zh", "en")  # 和 lang.LANGS 一致；这里只管路径，不依赖 lang 模块
+
+
 @dataclass(frozen=True)
 class WorkDir:
+    """lang 决定旁白、配音、字幕、片段和成片的位置；shots.json、图和图层所有语言共用。
+
+    中文（主版本）沿用原来的文件名，英文加 .en / _en 后缀。
+    """
     root: Path
+    lang: str = "zh"
+
+    def __post_init__(self) -> None:
+        if self.lang not in LANG_CODES:
+            raise VideoError(f"不支持的语言「{self.lang}」，应该是 {' / '.join(LANG_CODES)}")
+
+    def _file(self, stem: str, ext: str) -> Path:
+        return self.root / (f"{stem}{ext}" if self.lang == LANG_CODES[0] else f"{stem}.{self.lang}{ext}")
+
+    def _dir(self, name: str) -> Path:
+        return self.root / (name if self.lang == LANG_CODES[0] else f"{name}_{self.lang}")
 
     @property
     def narration(self) -> Path:
-        return self.root / "narration.txt"
+        return self._file("narration", ".txt")
 
     @property
     def shots(self) -> Path:
@@ -54,35 +72,39 @@ class WorkDir:
 
     @property
     def voice_dir(self) -> Path:
-        return self.root / "voice"
+        return self._dir("voice")
 
     @property
     def trim_dir(self) -> Path:
-        return self.root / "voice_trim"
+        return self._dir("voice_trim")
 
     @property
     def clip_dir(self) -> Path:
-        return self.root / "clips"
+        return self._dir("clips")
 
     @property
     def voice_wav(self) -> Path:
-        return self.root / "voice.wav"
+        return self._file("voice", ".wav")
 
     @property
     def subs(self) -> Path:
-        return self.root / "subs.ass"
+        return self._file("subs", ".ass")
+
+    @property
+    def srt(self) -> Path:
+        return self._file("subs", ".srt")
 
     @property
     def clip_list(self) -> Path:
-        return self.root / "clips.txt"
+        return self._file("clips", ".txt")
 
     @property
     def manifest(self) -> Path:
-        return self.root / "render.json"
+        return self._file("render", ".json")
 
     @property
     def timings(self) -> Path:
-        return self.root / "timings.json"
+        return self._file("timings", ".json")
 
     @property
     def layers_dir(self) -> Path:
@@ -108,4 +130,4 @@ class WorkDir:
         return self.clip_dir / f"{safe_id(shot_id)}.mp4"
 
     def default_output(self) -> Path:
-        return self.root / f"{self.root.name}.mp4"
+        return self._file(self.root.name, ".mp4")

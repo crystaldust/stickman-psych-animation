@@ -12,6 +12,7 @@ from video_fakes import word_meta
 from stickman.video import images, keychain, net, tts
 from stickman.video.config import VideoConfig
 from stickman.video.errors import VideoError
+from stickman.video.lang import ZH
 
 SECRET = "sk-secret-123"
 JPEG = b"\xff\xd8\xffdata"
@@ -188,7 +189,7 @@ def _tts_reply(text="想起他。"):
 
 
 def test_tts_body_uses_spoken_text_style_speaker_and_rate():
-    body = tts.tts_body("想起「ta」", VideoConfig())
+    body = tts.tts_body("想起「ta」", VideoConfig(), ZH)
 
     assert body["model"] == "seed-audio-1.0"
     assert body["text_prompt"].endswith("一字不差地说：“想起他”")
@@ -203,7 +204,7 @@ def test_synthesize_parses_audio_and_metadata():
         calls.append(headers)
         return _tts_reply()
 
-    result = tts.synthesize("想起ta。", SECRET, VideoConfig(), post=post, sleep=lambda s: None)
+    result = tts.synthesize("想起ta。", SECRET, VideoConfig(), ZH, post=post, sleep=lambda s: None)
 
     assert result.audio == b"mp3bytes"
     assert result.meta["source_text"] == "想起ta。" and "audio" not in result.meta and "url" not in result.meta
@@ -215,7 +216,7 @@ def test_synthesize_parses_audio_and_metadata():
                                    {**_tts_reply(), "original_duration": "5"}])
 def test_synthesize_rejects_incomplete_replies(reply):
     with pytest.raises(VideoError):
-        tts.synthesize("想起ta。", SECRET, VideoConfig(), post=lambda *a: reply, sleep=lambda s: None)
+        tts.synthesize("想起ta。", SECRET, VideoConfig(), ZH, post=lambda *a: reply, sleep=lambda s: None)
 
 
 def test_save_voice_writes_both_files_atomically(tmp_path):

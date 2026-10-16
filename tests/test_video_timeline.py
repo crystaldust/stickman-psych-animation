@@ -2,6 +2,7 @@ import pytest
 from video_fakes import word_meta
 
 from stickman.video.errors import VideoError
+from stickman.video.lang import ZH
 from stickman.video.subtitles import SUB_STYLE, ass_document, ts
 from stickman.video.text import apply_homophones, norm, split_sub, spoken
 from stickman.video.timeline import (
@@ -39,7 +40,7 @@ def test_split_sub_breaks_on_punctuation_and_long_runs():
 def test_char_times_maps_each_char_to_its_word():
     meta = word_meta("你好，世界。")
 
-    times, tokens = char_times(meta, norm("你好，世界。"), "s01")
+    times, tokens = char_times(meta, norm("你好，世界。"), "s01", ZH)
 
     assert len(times) == 4
     assert times[0] == (0.1, 0.3)
@@ -52,14 +53,14 @@ def test_char_times_accepts_original_word_returned_instead_of_homophone():
         {"text": "。", "start_time": 400, "end_time": 400},
     ]}]}}
 
-    times, _ = char_times(meta, norm("倒放。"), "s01")
+    times, _ = char_times(meta, norm("倒放。"), "s01", ZH)
 
     assert times == ((0.0, 0.4), (0.0, 0.4))
 
 
 def test_char_times_rejects_stale_voice_naming_the_shot():
     with pytest.raises(VideoError) as exc:
-        char_times(word_meta("旧的旁白"), norm("新的旁白"), "voice/s03.mp3")
+        char_times(word_meta("旧的旁白"), norm("新的旁白"), "voice/s03.mp3", ZH)
 
     assert "s03" in str(exc.value)
 
@@ -67,7 +68,7 @@ def test_char_times_rejects_stale_voice_naming_the_shot():
 @pytest.mark.parametrize("meta", [{}, {"subtitle": {"sentences": [{"words": [{"text": "a"}]}]}}, {"subtitle": []}])
 def test_char_times_rejects_malformed_metadata(meta):
     with pytest.raises(VideoError):
-        char_times(meta, "a", "s01")
+        char_times(meta, "a", "s01", ZH)
 
 
 @pytest.mark.parametrize("mark, cap", [("。", 0.6), ("？", 0.6), ("，", 0.35), ("", 0.35), ("、", 0.35)])
@@ -78,9 +79,9 @@ def test_pause_caps(mark, cap):
 def test_keep_intervals_shortens_long_pauses_only():
     # 你好（0.1–0.5）。停 2 秒 世界（2.5–2.9）；短停顿不动
     meta = word_meta("你好。世界", pauses={2: 2000})
-    _, tokens = char_times(meta, norm("你好。世界"), "s01")
+    _, tokens = char_times(meta, norm("你好。世界"), "s01", ZH)
 
-    spans = keep_intervals(tokens, total=3.5)
+    spans = keep_intervals(tokens, total=3.5, lang=ZH)
 
     assert spans == ((0.05, pytest.approx(0.8)), (pytest.approx(2.2), pytest.approx(3.05)))
     kept = sum(e - s for s, e in spans)
@@ -89,7 +90,7 @@ def test_keep_intervals_shortens_long_pauses_only():
 
 def test_keep_intervals_without_words_is_an_error():
     with pytest.raises(VideoError):
-        keep_intervals((), 1.0)
+        keep_intervals((), 1.0, ZH)
 
 
 def test_remap_is_monotonic_and_skips_cut_spans():
@@ -104,13 +105,13 @@ def test_shot_events_follow_subtitle_chunks_with_offset():
     lines = ("你好，世界。",)
     times = ((0.0, 0.1), (0.1, 0.2), (0.3, 0.4), (0.4, 0.5))
 
-    events = shot_events(lines, times, offset=10.0)
+    events = shot_events(lines, times, offset=10.0, lang=ZH)
 
     assert events == ((10.0, 10.2, "你好"), (10.3, 10.5, "世界"))
 
 
 def test_shot_events_skip_chunks_without_spoken_chars():
-    assert shot_events(("……", "好。"), ((0.0, 0.2),), offset=0.0) == ((0.0, 0.2, "好"),)
+    assert shot_events(("……", "好。"), ((0.0, 0.2),), offset=0.0, lang=ZH) == ((0.0, 0.2, "好"),)
 
 
 def test_hold_events_bridges_short_gaps_and_extends_long_ones_without_mutating():

@@ -9,10 +9,10 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from .config import TTS_ENDPOINT, TTS_STYLE, TTS_TIMEOUT_S, VideoConfig
+from .config import TTS_ENDPOINT, TTS_TIMEOUT_S, VideoConfig
 from .errors import VideoError
+from .lang import Lang
 from .net import post_json, with_retry
-from .text import spoken
 from .timeline import word_tokens
 
 Post = Callable[..., dict]
@@ -27,13 +27,13 @@ class TtsResult:
     billed_s: float
 
 
-def tts_body(text: str, config: VideoConfig) -> dict:
+def tts_body(text: str, config: VideoConfig, lang: Lang) -> dict:
     return {
         "model": config.tts_model,
-        "text_prompt": f"{TTS_STYLE}他一字不差地说：“{spoken(text)}”",
-        "references": [{"speaker": config.speaker}],
+        "text_prompt": lang.prompt(text),
+        "references": [{"speaker": getattr(config, lang.speaker_field)}],
         "audio_config": {"format": "mp3", "sample_rate": 44100, "enable_subtitle": True,
-                         "speech_rate": config.speech_rate},
+                         "speech_rate": getattr(config, lang.rate_field)},
     }
 
 
@@ -53,9 +53,9 @@ def _parse(data: dict, text: str, label: str) -> TtsResult:
     return TtsResult(audio, {**meta, "source_text": text}, float(billed))
 
 
-def synthesize(text: str, key: str, config: VideoConfig, post: Post = post_json,
+def synthesize(text: str, key: str, config: VideoConfig, lang: Lang, post: Post = post_json,
                sleep: Callable[[float], None] = time.sleep, label: str = "配音") -> TtsResult:
-    body = tts_body(text, config)
+    body = tts_body(text, config, lang)
     data = with_retry(lambda: post(TTS_ENDPOINT, body, {"X-Api-Key": key}, TTS_TIMEOUT_S, key, label), label, sleep)
     return _parse(data, text, label)
 

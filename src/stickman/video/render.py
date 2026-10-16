@@ -21,6 +21,8 @@ from .config import (
     FRAME_H,
     FRAME_W,
     OFF_DUR,
+    VOICE_LUFS,
+    VOICE_TRUE_PEAK,
     VideoConfig,
 )
 from .errors import VideoError
@@ -136,7 +138,9 @@ def final_mix(work: WorkDir, ids: tuple[str, ...], total: float, bgm: Path, out:
         f"[2:a]atrim=0:{total:.3f},asetpts=PTS-STARTPTS,volume={BGM_GAIN_DB}dB,"
         f"afade=t=in:st=0:d={BGM_FADE_IN},afade=t=out:st={max(0.0, total - BGM_FADE_OUT):.3f}:d={BGM_FADE_OUT}[m]"
     )
-    mix = "[1:a]aformat=channel_layouts=stereo[vo];[vo][m]amix=inputs=2:duration=first:normalize=0[a]"
+    mix = (f"[1:a]loudnorm=I={VOICE_LUFS}:TP={VOICE_TRUE_PEAK},aresample=44100,"  # loudnorm 默认输出 192k 采样率
+           "aformat=channel_layouts=stereo[vo];"
+           "[vo][m]amix=inputs=2:duration=first:normalize=0[a]")
     ffmpeg(["-f", "concat", "-safe", "0", "-i", work.clip_list, "-i", work.voice_wav, "-i", bgm,
             "-filter_complex", f"{music};{mix}", "-map", "0:v", "-map", "[a]",
             "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-t", f"{total:.3f}", part_path(out)], runner)

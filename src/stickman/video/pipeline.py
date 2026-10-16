@@ -1,5 +1,7 @@
 """整条流水线：分镜 → 出图 ∥ 配音 → 拼配音、算字幕 → 渲染片段 → 拼接混音。
 
+WorkDir.lang 选语言版本。图和分镜归中文版（主版本）：英文版只配音、渲染，不出图，缺图时报错。
+
 已有的图和配音直接复用，所以失败后重跑只会补缺的那几个。配音只要和旁白对不上就报错，
 不会悄悄重新生成——那是要计费的。
 """
@@ -19,9 +21,10 @@ from .config import ENCODER, FPS, KEYCHAIN_IMAGE, KEYCHAIN_TTS, VideoConfig
 from .errors import VideoError
 from .ffmpeg import Runner, count_frames, run_command
 from .keychain import read_secret
+from .lang import LANGS, PRIMARY, Lang
 from .render import ClipJob, clip_jobs, final_mix, image_digest, read_manifest, render_clips, write_manifest
 from .shots import ImageTarget, ShotSpec, load_spec, shot_lines
-from .subtitles import ass_document
+from .subtitles import ass_document, srt_document
 from .timeline import clip_frames
 from .workdir import WorkDir, safe_id
 
@@ -73,20 +76,25 @@ def _existing(value: str, kind: str) -> Path:
     return path
 
 
+def _lang(work: WorkDir) -> Lang:
+    return LANGS[work.lang]
+
+
 def _stale_voices(work: WorkDir, segments: tuple[Segment, ...]) -> tuple[str, ...]:
     """已有配音里，生成时的旁白和现在不一样的镜头。
 
     旧流水线生成的配音没有 source_text，这里放行；之后 char_times 逐字比对内容，对不上同样会报错。
     """
     cached = set(s for s, _ in segments) - set(missing_voice(work, tuple(s for s, _ in segments)))
+    joiner = _lang(work).joiner
     return tuple(
         sid for sid, lines in segments
-        if sid in cached and read_meta(work, sid).get("source_text") not in (None, "".join(lines))
+        if sid in cached and read_meta(work, sid).get("source_text") not in (None, joiner.join(lines))
     )
 
 
 def _voice_job(services: Services, text: str, key: str, config: VideoConfig, work: WorkDir, sid: str) -> float:
-    result = services.synthesize(text, key, config, label=f"配音 {sid}")
+    result = services.synthesize(text, key, config, _lang(work), label=f"配音 {sid}")
     tts.save_voice(result, work.voice(sid), work.voice_meta(sid))
     return result.billed_s
 
@@ -121,10 +129,10 @@ def media_stage(work: WorkDir, segments: tuple[Segment, ...], config: VideoConfi
     stale = _stale_voices(work, segments)
     if stale:
         raise VideoError(f"这些镜头的配音和现在的旁白对不上：{', '.join(stale)}。"
-                         "确认要重新配音（会计费）就删掉对应的 voice/<id>.mp3 再运行")
+                         f"确认要重新配音（会计费）就删掉对应的 {work.voice_dir.name}/<id>.mp3 再运行")
     need_img = tuple(t for t in targets if not t.path.is_file())
     no_voice = set(missing_voice(work, tuple(s for s, _ in segments)))
-    need_tts = tuple((sid, "".join(lines)) for sid, lines in segments if sid in no_voice)
+    need_tts = tuple((sid, _lang(work).joiner.join(lines)) for sid, lines in segments if sid in no_voice)
     if not need_img and not need_tts:
         return MediaReport()
     inputs = inputs or media_inputs(config, services, bool(need_img), bool(need_tts))
@@ -161,13 +169,25 @@ def _require_cached(work: WorkDir, spec: ShotSpec, segments: tuple[Segment, ...]
 
 
 def _voice(work: WorkDir, segments: tuple[Segment, ...], runner: Runner) -> VoiceTimeline:
+    lang = _lang(work)
     timeline = build_voice(work, segments, runner)
-    work.subs.write_text(ass_document(timeline.events), encoding="utf-8")
+    work.subs.write_text(ass_document(timeline.events, lang.sub_style), encoding="utf-8")
+    work.srt.write_text(srt_document(timeline.events), encoding="utf-8")
     return timeline
 
 
 def _frame_map(ids: tuple[str, ...], frames: tuple[int, ...]) -> dict[str, int]:
     return {sid: b - a for sid, a, b in zip(ids, frames, frames[1:])}
+
+
+def _to_generate(work: WorkDir, targets: tuple[ImageTarget, ...]) -> tuple[ImageTarget, ...]:
+    """要补的图。英文版共用中文版的图，不自己出图：缺图说明中文版还没出完。"""
+    if work.lang == PRIMARY:
+        return targets
+    missing = [t.id for t in targets if not t.path.is_file()]
+    if missing:
+        raise VideoError(f"{work.lang} 版共用中文版的图，缺图 {', '.join(missing)}：先渲染中文版")
+    return ()
 
 
 def render(work: WorkDir, config: VideoConfig, services: Services, out: Path, offline: bool) -> RenderReport:
@@ -179,7 +199,7 @@ def render(work: WorkDir, config: VideoConfig, services: Services, out: Path, of
     targets = spec.targets(work)
     with _stage(timings, "media"):
         media = (_require_cached(work, spec, segments) if offline
-                 else media_stage(work, segments, config, services, targets))
+                 else media_stage(work, segments, config, services, _to_generate(work, targets)))
     with _stage(timings, "voice"):
         timeline = _voice(work, segments, services.runner)
     frames = clip_frames(timeline.shot_starts, timeline.total)
@@ -256,6 +276,9 @@ def _timeline_unchanged(work: WorkDir, manifest: dict, all_ids: tuple[str, ...],
 def reshoot(work: WorkDir, config: VideoConfig, services: Services, shot_ids: tuple[str, ...],
             out: Path, generate: bool) -> RenderReport:
     """只重做指定镜头或图层：（可选）重新出图 → 重渲这些片段 → 重新拼接混音。时间线和编码参数必须和上次一致。"""
+    if generate and work.lang != PRIMARY:
+        raise VideoError(f"{work.lang} 版共用中文版的图，不能在这里重新出图：先在中文版 reshoot 出新图，"
+                         f"再对 {work.lang} 版运行 reshoot --no-generate")
     spec, lines = load_spec(work)
     (ids, targets), all_ids, segments = _selected(spec, work, shot_ids), spec.ids(), shot_lines(spec, lines)
     manifest = read_manifest(work)

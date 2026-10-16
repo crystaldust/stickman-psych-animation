@@ -6,6 +6,7 @@
 """
 
 import json
+import re
 import string
 from dataclasses import dataclass
 from pathlib import Path
@@ -130,8 +131,31 @@ def read_lines(work: WorkDir) -> tuple[str, ...]:
     return tuple(line.strip() for line in text.splitlines() if line.strip())
 
 
+# 英文旁白只能有字母、空格和常见标点：数字、符号、带重音的字母配音会按读法返回（2 → two），
+# 字幕比对就对不上，而且要到配音计费以后才发现；{ } \ 会被字幕当成 ASS 格式标签。
+_EN_ALLOWED = re.compile(r"[A-Za-z ,.;:!?'’‘\-—–…()]*")
+
+
+def _check_translation(work: WorkDir, lines: tuple[str, ...]) -> None:
+    """译文一行对应中文一行，镜头的 line 才能两边通用；每行只能有配音能逐词对上的字符。"""
+    primary = WorkDir(work.root)
+    if work.lang == primary.lang:
+        return
+    n = len(read_lines(primary))
+    errors = [f"{work.narration.name} 有 {len(lines)} 行，{primary.narration.name} 有 {n} 行："
+              "译文必须一行对应中文一行"] if len(lines) != n else []
+    for i, line in enumerate(lines, 1):
+        if not _EN_ALLOWED.fullmatch(line):
+            bad = "".join(sorted(set(re.sub(r"[A-Za-z ,.;:!?'’‘\-—–…()]", "", line))))
+            errors.append(f"{work.narration.name} 第 {i} 行有配音对不上的字符「{bad}」：数字和符号写成单词，"
+                          f"不要汉字、全角标点和带重音的字母（{line[:40]}）")
+    if errors:
+        raise VideoError("\n  ".join(errors))
+
+
 def load_spec(work: WorkDir) -> tuple[ShotSpec, tuple[str, ...]]:
     lines = read_lines(work)
+    _check_translation(work, lines)
     data = _read_json(work)
     raw_shots = data.get("shots")
     errors = _style_errors(data.get("style"))

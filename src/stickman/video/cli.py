@@ -13,6 +13,7 @@ from . import pipeline
 from .config import VideoConfig, load_config
 from .draft import read_draft, write_workdir
 from .errors import VideoError
+from .lang import LANGS, PRIMARY
 from .motion import max_layered
 from .shots import load_spec, shot_lines
 from .workdir import WorkDir, inside_project, safe_slug
@@ -20,6 +21,7 @@ from .workdir import WorkDir, inside_project, safe_slug
 EXIT_OK = 0
 EXIT_FAILED = 1
 DEFAULT_VIDEOS_DIR = "data/videos"
+CHECK_PREVIEW_CHARS = {"zh": 24, "en": 60}  # check 每个镜头预览的旁白长度
 
 Handler = Callable[[argparse.Namespace], int]
 
@@ -49,14 +51,15 @@ def _cmd_init(args: argparse.Namespace) -> int:
 
 
 def _cmd_check(args: argparse.Namespace) -> int:
-    work = WorkDir(Path(args.work))
+    work = WorkDir(Path(args.work), args.lang)
     spec, lines = load_spec(work)
     for shot, (sid, shot_text) in zip(spec.shots, shot_lines(spec, lines)):
         layered = ""
         if shot.motion:
             names = ", ".join(layer.name for layer in shot.motion.layers) or "整幅图"
             layered = f"  [分层：{shot.motion.kind}（{names}）]"
-        print(f"{sid}  第 {shot.line}–{shot.line + len(shot_text) - 1} 行  {''.join(shot_text)[:24]}{layered}")
+        text = LANGS[work.lang].joiner.join(shot_text)
+        print(f"{sid}  第 {shot.line}–{shot.line + len(shot_text) - 1} 行  {text[:CHECK_PREVIEW_CHARS[work.lang]]}{layered}")
     n_layered = sum(1 for s in spec.shots if s.motion)
     targets = spec.targets(work)
     missing = sum(1 for t in targets if not t.path.is_file())
@@ -76,13 +79,17 @@ def _output(value: str | None, work: WorkDir) -> Path:
     out = inside_project(value)
     if out.suffix != ".mp4" or not out.is_relative_to(work.root):
         raise VideoError(f"--out 必须是工作目录 {work.root} 里的 .mp4 文件")
+    others = {WorkDir(work.root, code).default_output() for code in LANGS if code != work.lang}
+    if out in others:
+        raise VideoError(f"--out 不能是其他语言版本的成片：{out.name}")
     return out
 
 
 def _prepare(args: argparse.Namespace) -> tuple[WorkDir, VideoConfig, Path]:
-    work = WorkDir(inside_project(args.work))
+    work = WorkDir(inside_project(args.work), args.lang)
     safe_slug(work.root.name)  # 目录名会进 ffmpeg 滤镜参数，= 之类的字符会让它解析失败
-    config = load_config(work.root, {"ref_image": args.ref, "speaker": args.speaker, "bgm": args.bgm})
+    speaker_field = LANGS[work.lang].speaker_field  # --speaker 只换当前语言的音色
+    config = load_config(work.root, {"ref_image": args.ref, speaker_field: args.speaker, "bgm": args.bgm})
     # 参考图会上传给出图接口，BGM 会被读进成片：都限制在项目内（会解析符号链接）。
     config = replace(config, ref_image=str(inside_project(config.ref_image)), bgm=str(inside_project(config.bgm)))
     return work, config, _output(args.out, work)
@@ -107,11 +114,17 @@ def _cmd_reshoot(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _add_lang_arg(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--lang", choices=tuple(LANGS), default=PRIMARY,
+                        help=f"语言版本，默认 {PRIMARY}；en 读 narration.en.txt，共用中文版的图，出 <目录名>.en.mp4")
+
+
 def _add_media_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("work", help="工作目录，例如 data/videos/<slug>")
-    parser.add_argument("--out", help="成片路径，默认 <工作目录>/<目录名>.mp4")
+    _add_lang_arg(parser)
+    parser.add_argument("--out", help="成片路径，默认 <工作目录>/<目录名>.mp4（英文版 <目录名>.en.mp4）")
     parser.add_argument("--ref", help="角色参考图（默认见 config.py，可在工作目录的 video.json 里覆盖）")
-    parser.add_argument("--speaker", help="配音音色 id")
+    parser.add_argument("--speaker", help="当前语言的配音音色 id")
     parser.add_argument("--bgm", help="背景音乐")
 
 
@@ -128,6 +141,7 @@ def build_parser(prog: str) -> argparse.ArgumentParser:
 
     check = sub.add_parser("check", help="校验 shots.json：镜头 id、行号、bg / scene 是否填好")
     check.add_argument("work", help="工作目录，例如 data/videos/<slug>")
+    _add_lang_arg(check)
     check.set_defaults(handler=_cmd_check)
 
     render = sub.add_parser("render", help="出片：补齐缺的图和配音（付费），渲染并拼接；已有的素材直接复用")
