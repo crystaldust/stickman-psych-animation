@@ -182,5 +182,5 @@ def layer_prompt(style: str, bg: str, motion: Motion, layer: Layer) -> str:
 
 
 def max_layered(n_shots: int) -> int:
-    """一条视频里分层镜头最多占三分之一：只给真正需要「环境自己动」的镜头用。"""
-    return n_shots // 3
+    """一条视频里分层镜头最多占一半（用户定的，原来是三分之一）：只给真正需要「环境自己动」的镜头用。"""
+    return n_shots // 2

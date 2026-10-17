@@ -2,7 +2,7 @@
 
 一个镜头从第 line 行旁白开始，到下一个镜头的前一行为止。校验不过就不往下走，
 这样没填完的骨架永远不会被拿去调付费接口。镜头可以带 motion（见 motion.py）改为分层，
-但分层镜头最多占三分之一。
+但分层镜头最多占一半。
 """
 
 import json
@@ -107,7 +107,7 @@ def _cap_errors(raw_shots: list) -> list[str]:
     cap = max_layered(len(raw_shots))
     if len(layered) <= cap:
         return []
-    return [f"分层镜头有 {len(layered)} 个（{', '.join(map(str, layered))}），上限 {cap} 个（镜头数的三分之一）："
+    return [f"分层镜头有 {len(layered)} 个（{', '.join(map(str, layered))}），上限 {cap} 个（镜头数的一半）："
             "只给环境要自己动的镜头分层，其余去掉 motion"]
 
 

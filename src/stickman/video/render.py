@@ -18,9 +18,7 @@ from .config import (
     BGM_GAIN_DB,
     ENCODER,
     FPS,
-    FRAME_H,
-    FRAME_W,
-    OFF_DUR,
+    LOOK_VERSION,
     VOICE_LUFS,
     VOICE_TRUE_PEAK,
     VideoConfig,
@@ -35,7 +33,6 @@ from .workdir import WorkDir
 # 分层镜头每帧画面都在变，质感只能逐帧算。
 STILL_LOOK = f"{FIT},{LOOK}"
 GRAIN = "noise=alls=8:allf=t+u"
-FADE_TAIL = 0.25
 
 
 @dataclass(frozen=True)
@@ -45,7 +42,6 @@ class ClipJob:
     start_frame: int
     frames: int
     out: Path
-    is_last: bool
     motion: Motion | None = None
     layers: tuple[tuple[str, Path], ...] = ()  # 分层镜头的（图层名，图片）
 
@@ -61,29 +57,21 @@ def sway_filter() -> str:
     )
 
 
-def clip_filter(start_frame: int, frames: int, subs: str | Path, is_last: bool) -> str:
-    return f"{sway_filter()},{_tail(start_frame, frames, subs, is_last)}"
+def clip_filter(start_frame: int, subs: str | Path) -> str:
+    return f"{sway_filter()},{_tail(start_frame, subs)}"
 
 
-def _tail(start_frame: int, frames: int, subs: str | Path, is_last: bool) -> str:
-    """摆动或合成之后的共同部分：颗粒、按时间线位置烧字幕、最后一镜的 CRT 关机。"""
-    vf = (f"{GRAIN},setpts=PTS-STARTPTS+{start_frame}/{FPS}/TB,"
-          f"subtitles={filter_escape(subs)},setpts=PTS-STARTPTS")
-    if is_last:
-        dur = frames / FPS
-        if dur < OFF_DUR + FADE_TAIL:
-            raise VideoError(f"最后一个镜头只有 {dur:.2f} 秒，放不下 CRT 关机动画")
-        off = dur - OFF_DUR
-        vf += (f",scale=w=iw:h='if(gte(t,{off:.2f}),max(4,ih*(1-(t-{off:.2f})/{OFF_DUR * 0.6:.2f})),ih)':eval=frame,"
-               f"pad={FRAME_W}:{FRAME_H}:(ow-iw)/2:(oh-ih)/2:black,fade=t=out:st={dur - FADE_TAIL:.2f}:d={FADE_TAIL}")
-    return vf + ",format=yuv420p"
+def _tail(start_frame: int, subs: str | Path) -> str:
+    """摆动或合成之后的共同部分：颗粒、按时间线位置烧字幕。结尾不加动画，停在最后一帧（用户定的）。"""
+    return (f"{GRAIN},setpts=PTS-STARTPTS+{start_frame}/{FPS}/TB,"
+            f"subtitles={filter_escape(subs)},setpts=PTS-STARTPTS,format=yuv420p")
 
 
 def clip_jobs(work: WorkDir, shots: tuple[Shot, ...], frames: tuple[int, ...]) -> tuple[ClipJob, ...]:
     return tuple(
-        ClipJob(s.id, work.image(s.id), f0, f1 - f0, work.clip(s.id), i == len(shots) - 1, s.motion,
+        ClipJob(s.id, work.image(s.id), f0, f1 - f0, work.clip(s.id), s.motion,
                 tuple((layer.name, work.layer(s.id, layer.name)) for layer in s.motion.layers) if s.motion else ())
-        for i, (s, f0, f1) in enumerate(zip(shots, frames, frames[1:]))
+        for s, f0, f1 in zip(shots, frames, frames[1:])
     )
 
 
@@ -102,7 +90,7 @@ def _render_layered(job: ClipJob, subs: Path, config: VideoConfig, runner: Runne
     graph = build_graph(job.motion, layers, job.image, dur, probe)
     inputs = [arg for path in graph.inputs
               for arg in ("-f", "image2", "-loop", "1", "-framerate", str(FPS), "-t", f"{dur:.3f}", "-i", path)]
-    full = f"{graph.graph};[comp]{LOOK},{_tail(job.start_frame, job.frames, subs, job.is_last)}[v]"
+    full = f"{graph.graph};[comp]{LOOK},{_tail(job.start_frame, subs)}[v]"
     part = part_path(job.out)
     ffmpeg([*inputs, "-filter_complex", full, "-map", "[v]", "-frames:v", str(job.frames),
             "-c:v", ENCODER, "-b:v", config.video_bitrate, part], runner)
@@ -118,7 +106,7 @@ def render_clip(job: ClipJob, subs: Path, config: VideoConfig, runner: Runner) -
     ffmpeg(["-f", "image2", "-i", job.image, "-vf", STILL_LOOK, "-frames:v", "1", "-q:v", "2",
             "-pix_fmt", "yuvj420p", still], runner)
     ffmpeg(["-loop", "1", "-framerate", str(FPS), "-i", still, "-frames:v", str(job.frames),
-            "-vf", clip_filter(job.start_frame, job.frames, subs, job.is_last),
+            "-vf", clip_filter(job.start_frame, subs),
             "-c:v", ENCODER, "-b:v", config.video_bitrate, part], runner)
     os.replace(part, job.out)
 
@@ -151,10 +139,21 @@ def image_digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def write_manifest(work: WorkDir, config: VideoConfig, frames: dict[str, int], images: dict[str, str]) -> None:
+def shot_looks(shots: tuple[Shot, ...], images: dict[str, str]) -> dict[str, str]:
+    """每个镜头画面的指纹：用了哪几张图、什么运动参数、哪一版画面效果。同一镜头中英文两版的指纹必须相同。"""
+    looks = {}
+    for shot in shots:
+        used = sorted((k, v) for k, v in images.items() if k.partition(":")[0] == shot.id)
+        motion = None if shot.motion is None else (shot.motion.kind, shot.motion.params)
+        looks[shot.id] = hashlib.sha256(repr((LOOK_VERSION, motion, used)).encode()).hexdigest()
+    return looks
+
+
+def write_manifest(work: WorkDir, config: VideoConfig, frames: dict[str, int], images: dict[str, str],
+                   looks: dict[str, str]) -> None:
     manifest = {
         "fps": FPS, "encoder": ENCODER, "bitrate": config.video_bitrate,
-        "total_frames": sum(frames.values()), "frames": frames, "images": images,
+        "total_frames": sum(frames.values()), "frames": frames, "images": images, "looks": looks,
     }
     work.manifest.write_text(json.dumps(manifest, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 

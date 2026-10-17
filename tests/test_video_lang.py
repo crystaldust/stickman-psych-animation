@@ -12,6 +12,7 @@ from stickman.video.config import KEYCHAIN_TTS, VideoConfig
 from stickman.video.errors import VideoError
 from stickman.video.lang import EN, LANGS, PRIMARY, ZH
 from stickman.video.pipeline import Services, render, reshoot
+from stickman.video import render as render_mod
 from stickman.video.render import read_manifest
 from stickman.video.shots import load_spec
 from stickman.video.subtitles import SUB_STYLE_EN, srt_document
@@ -200,9 +201,16 @@ def _images(work):
 
 
 def _services(**overrides):
-    defaults = dict(runner=FakeRunner(durations={"voice.en.wav": 8.0}, frames={"s01.mp4": 80, "s02.mp4": 160}),
+    defaults = dict(runner=FakeRunner(durations={"voice.wav": 8.0, "voice.en.wav": 8.0}, frames={"s01.mp4": 80, "s02.mp4": 160}),
                     read_secret=FakeSecrets(), synthesize=FakeTts(), generate_image=FakeImages())
     return Services(**{**defaults, **overrides})
+
+
+def _render_zh(work, config, services=None):
+    """英文版要跟着中文版成片走，所以先把中文版渲染出来。"""
+    zh = WorkDir(work.root)
+    render(zh, config, services or _services(), out=zh.default_output(), offline=False)
+    return zh
 
 
 def test_load_spec_en_reads_english_lines_against_the_same_shots(tmp_path):
@@ -234,6 +242,7 @@ def test_load_spec_en_rejects_chinese_left_in_the_translation(tmp_path):
 def test_render_en_voices_english_reuses_images_and_writes_its_own_outputs(tmp_path):
     work, config = _setup(tmp_path)
     _images(work)
+    _render_zh(work, config)
     services = _services()
 
     report = render(work, config, services, out=work.default_output(), offline=False)
@@ -244,9 +253,8 @@ def test_render_en_voices_english_reuses_images_and_writes_its_own_outputs(tmp_p
     assert report.out.name == "w.en.mp4" and report.out.exists()
     assert SUB_STYLE_EN in work.subs.read_text(encoding="utf-8")
     assert "Hello" in work.srt.read_text(encoding="utf-8")
-    assert work.clip("s01").exists() and not WorkDir(work.root).clip_dir.exists()
+    assert work.clip("s01").exists() and work.clip("s01") != WorkDir(work.root).clip("s01")
     assert read_manifest(work)["frames"] == {"s01": 80, "s02": 160}
-    assert not WorkDir(work.root).manifest.exists()
 
 
 def test_render_en_refuses_to_generate_shared_images(tmp_path):
@@ -263,6 +271,7 @@ def test_render_en_refuses_to_generate_shared_images(tmp_path):
 def test_render_en_reports_stale_english_voice(tmp_path):
     work, config = _setup(tmp_path)
     _images(work)
+    _render_zh(work, config)
     write_voice(work, "s01", "Old line.", source_text="Old line.", lang=EN)
     services = _services()
 
@@ -275,6 +284,7 @@ def test_render_en_reports_stale_english_voice(tmp_path):
 def test_reshoot_en_only_rerenders_and_never_regenerates_shared_images(tmp_path):
     work, config = _setup(tmp_path)
     _images(work)
+    _render_zh(work, config)
     services = _services()
     render(work, config, services, out=work.default_output(), offline=False)
 
@@ -284,6 +294,94 @@ def test_reshoot_en_only_rerenders_and_never_regenerates_shared_images(tmp_path)
 
     reshoot(work, config, services, ("s01",), out=work.default_output(), generate=False)
     assert services.generate_image.prompts == {}
+
+
+def test_render_en_requires_the_chinese_version_rendered_first(tmp_path):
+    work, config = _setup(tmp_path)
+    _images(work)
+    services = _services()
+
+    with pytest.raises(VideoError) as exc:
+        render(work, config, services, out=work.default_output(), offline=False)
+
+    assert "中文版" in str(exc.value) and services.synthesize.texts == []  # 配音之前就拦下，不花钱
+
+
+def test_render_en_refuses_when_the_chinese_cut_used_another_image(tmp_path):
+    # 回归：中文版换了图（或改了 motion）却没重渲，英文版按新图出片，两版画面对不上。
+    work, config = _setup(tmp_path)
+    _images(work)
+    _render_zh(work, config)
+    work.image("s02").write_bytes(b"jpg-new")
+
+    with pytest.raises(VideoError) as exc:
+        render(work, config, _services(), out=work.default_output(), offline=False)
+
+    assert "s02" in str(exc.value) and "s01" not in str(exc.value) and "reshoot" in str(exc.value)
+
+
+def test_render_en_refuses_when_the_chinese_cut_used_an_older_motion(tmp_path):
+    work, config = _setup(tmp_path)
+    shots = [{"id": f"s0{n}", "line": n, "bg": "蓝色", "scene": "站着"} for n in (1, 2, 3)]
+    shots[0]["motion"] = {"type": "glow", "color": "#FFE66D"}
+    _write_shots(work, shots)
+    _images(work)
+    work.image("s03").write_bytes(b"jpg-s03")
+    _render_zh(work, config)
+    shots[0]["motion"]["color"] = "#88CCFF"
+    _write_shots(work, shots)
+
+    with pytest.raises(VideoError) as exc:
+        render(work, config, _services(), out=work.default_output(), offline=False)
+
+    assert "s01" in str(exc.value) and "s02" not in str(exc.value) and "中文版" in str(exc.value)
+
+
+def _write_shots(work, shots):
+    work.shots.write_text(json.dumps({"style": "风格{bg}：", "shots": shots}, ensure_ascii=False), encoding="utf-8")
+
+
+def test_render_en_refuses_when_the_chinese_cut_predates_a_look_change(tmp_path, monkeypatch):
+    # 回归：发光效果的代码修过以后中文版没重渲，英文版用的是新效果。
+    work, config = _setup(tmp_path)
+    _images(work)
+    _render_zh(work, config)
+    monkeypatch.setattr(render_mod, "LOOK_VERSION", render_mod.LOOK_VERSION + 1)
+
+    with pytest.raises(VideoError) as exc:
+        render(work, config, _services(), out=work.default_output(), offline=False)
+
+    assert "s01" in str(exc.value) and "s02" in str(exc.value)
+
+
+def test_reshoot_en_refuses_to_leave_other_english_shots_behind_the_chinese_cut(tmp_path):
+    work, config = _setup(tmp_path)
+    _images(work)
+    zh = _render_zh(work, config)
+    render(work, config, _services(), out=work.default_output(), offline=False)
+    work.image("s02").write_bytes(b"jpg-new")
+    reshoot(zh, config, _services(), ("s02",), out=zh.default_output(), generate=False)
+
+    with pytest.raises(VideoError) as exc:
+        reshoot(work, config, _services(), ("s01",), out=work.default_output(), generate=False)
+    assert "s02" in str(exc.value)
+
+    reshoot(work, config, _services(), ("s02",), out=work.default_output(), generate=False)
+
+
+def test_reshoot_drops_image_keys_the_spec_no_longer_has(tmp_path):
+    # 回归：旧清单里的图片键（镜头改成分层前的 s01）被 reshoot 原样带下去，指纹永远对不上。
+    work, config = _setup(tmp_path)
+    _images(work)
+    zh = _render_zh(work, config)
+    manifest = json.loads(zh.manifest.read_text(encoding="utf-8"))
+    manifest["images"]["s01:old"] = "stale"
+    zh.manifest.write_text(json.dumps(manifest), encoding="utf-8")
+
+    reshoot(zh, config, _services(), ("s01", "s02"), out=zh.default_output(), generate=False)
+
+    assert set(read_manifest(zh)["images"]) == {"s01", "s02"}
+    render(work, config, _services(), out=work.default_output(), offline=False)
 
 
 def test_build_voice_en_uses_word_timestamps(tmp_path):
@@ -304,6 +402,7 @@ def test_cli_lang_en_checks_and_renders_the_english_version(tmp_path, monkeypatc
     services = _services()
     monkeypatch.setattr(cli, "_services", lambda: services)
     flags = ["--ref", "ref.jpg", "--bgm", "bgm.mp3", "--lang", "en"]
+    assert cli.main(["render", "w", *flags[:4]]) == 0
 
     assert cli.main(["check", "w", "--lang", "en"]) == 0
     assert "Hello, world." in capsys.readouterr().out

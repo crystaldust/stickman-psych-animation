@@ -116,7 +116,7 @@ def test_glow_pulses_the_given_colour_of_the_single_image():
 def test_layered_clip_composes_layers_then_shares_the_look_and_subtitle_tail(tmp_path):
     work = WorkDir(tmp_path)
     motion = _motion({"type": "rise", "layers": {"bg": "a", "puff": "b"}, "at": [0.5, 0.6]})
-    job = ClipJob("s02", work.image("s02"), 300, 120, work.clip("s02"), True, motion,
+    job = ClipJob("s02", work.image("s02"), 300, 120, work.clip("s02"), motion,
                   (("bg", work.layer("s02", "bg")), ("puff", work.layer("s02", "puff"))))
     runner = FakeRunner()
 
@@ -129,7 +129,7 @@ def test_layered_clip_composes_layers_then_shares_the_look_and_subtitle_tail(tmp
     assert encode[encode.index("-frames:v") + 1] == "120" and encode[encode.index("-map") + 1] == "[v]"
     graph = encode[encode.index("-filter_complex") + 1]
     assert "[comp]rgbashift" in graph and "setpts=PTS-STARTPTS+300/30/TB" in graph
-    assert "fade=t=out" in graph and graph.endswith("format=yuv420p[v]")
+    assert "fade=t=out" not in graph and graph.endswith("format=yuv420p[v]")
     assert "perspective=" not in graph
     probe = next(c for c in runner.ffmpeg_calls() if c[-1].endswith(".ppm"))
     assert str(work.layer("s02", "puff")) in probe

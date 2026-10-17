@@ -22,7 +22,16 @@ from .errors import VideoError
 from .ffmpeg import Runner, count_frames, run_command
 from .keychain import read_secret
 from .lang import LANGS, PRIMARY, Lang
-from .render import ClipJob, clip_jobs, final_mix, image_digest, read_manifest, render_clips, write_manifest
+from .render import (
+    ClipJob,
+    clip_jobs,
+    final_mix,
+    image_digest,
+    read_manifest,
+    render_clips,
+    shot_looks,
+    write_manifest,
+)
 from .shots import ImageTarget, ShotSpec, load_spec, shot_lines
 from .subtitles import ass_document, srt_document
 from .timeline import clip_frames
@@ -180,14 +189,29 @@ def _frame_map(ids: tuple[str, ...], frames: tuple[int, ...]) -> dict[str, int]:
     return {sid: b - a for sid, a, b in zip(ids, frames, frames[1:])}
 
 
-def _to_generate(work: WorkDir, targets: tuple[ImageTarget, ...]) -> tuple[ImageTarget, ...]:
-    """要补的图。英文版共用中文版的图，不自己出图：缺图说明中文版还没出完。"""
-    if work.lang == PRIMARY:
-        return targets
+def _digests(targets: tuple[ImageTarget, ...]) -> dict[str, str]:
+    return {t.id: image_digest(t.path) for t in targets}
+
+
+def _follow_primary(work: WorkDir, spec: ShotSpec, targets: tuple[ImageTarget, ...]) -> dict[str, str]:
+    """其他语言版的画面跟着中文版成片走：中文版每个镜头都要是用现在的图、motion 和画面效果渲染的。
+
+    在配音、渲染之前检查，不一致就不花钱。返回现在每个镜头的画面指纹。
+    """
     missing = [t.id for t in targets if not t.path.is_file()]
     if missing:
         raise VideoError(f"{work.lang} 版共用中文版的图，缺图 {', '.join(missing)}：先渲染中文版")
-    return ()
+    primary = WorkDir(work.root)
+    if not primary.manifest.is_file():
+        raise VideoError(f"{work.lang} 版的画面跟着中文版走，中文版还没有用 render 渲染过：先渲染中文版")
+    looks = shot_looks(spec.shots, _digests(targets))
+    done = read_manifest(primary).get("looks", {})
+    stale = [sid for sid, look in looks.items() if done.get(sid) != look]
+    if stale:
+        ids = " ".join(stale)
+        raise VideoError(f"中文版成片里这些镜头不是用现在的图、motion 或画面效果渲染的：{ids}。"
+                         f"先重渲中文版（reshoot <目录> {ids} --no-generate），再渲染 {work.lang} 版")
+    return looks
 
 
 def render(work: WorkDir, config: VideoConfig, services: Services, out: Path, offline: bool) -> RenderReport:
@@ -197,15 +221,19 @@ def render(work: WorkDir, config: VideoConfig, services: Services, out: Path, of
     timings: dict[str, float] = {}
     t_all = time.monotonic()
     targets = spec.targets(work)
+    if work.lang != PRIMARY:
+        _follow_primary(work, spec, targets)
+    to_generate = targets if work.lang == PRIMARY else ()  # 其他语言版共用中文版的图，不自己出图
     with _stage(timings, "media"):
         media = (_require_cached(work, spec, segments) if offline
-                 else media_stage(work, segments, config, services, _to_generate(work, targets)))
+                 else media_stage(work, segments, config, services, to_generate))
     with _stage(timings, "voice"):
         timeline = _voice(work, segments, services.runner)
     frames = clip_frames(timeline.shot_starts, timeline.total)
     with _stage(timings, "clips"):
         render_clips(clip_jobs(work, spec.shots, frames), work.subs, config, services.runner)
-    write_manifest(work, config, _frame_map(ids, frames), {t.id: image_digest(t.path) for t in targets})
+    images = _digests(targets)
+    write_manifest(work, config, _frame_map(ids, frames), images, shot_looks(spec.shots, images))
     with _stage(timings, "final"):
         out.parent.mkdir(parents=True, exist_ok=True)
         final_mix(work, ids, timeline.total, bgm, out, services.runner)
@@ -285,6 +313,12 @@ def reshoot(work: WorkDir, config: VideoConfig, services: Services, shot_ids: tu
     _check_encoding(manifest, config)
     bgm = _existing(config.bgm, " BGM")
     _require_cached(work, spec, segments, skip_images=tuple(t.id for t in targets) if generate else ())
+    if work.lang != PRIMARY:
+        looks = _follow_primary(work, spec, spec.targets(work))
+        done = manifest.get("looks", {})
+        behind = [sid for sid in all_ids if sid not in ids and done.get(sid) != looks[sid]]
+        if behind:
+            raise VideoError(f"{work.lang} 版这些镜头和中文版成片的画面不一致，要一起重渲：{' '.join(behind)}")
     timings: dict[str, float] = {}
     with _stage(timings, "voice"):
         timeline, frames = _timeline_unchanged(work, manifest, all_ids, segments, services.runner)
@@ -299,8 +333,10 @@ def reshoot(work: WorkDir, config: VideoConfig, services: Services, shot_ids: tu
     with _stage(timings, "clips"):
         render_clips(jobs, work.subs, config, services.runner)
         _check_new_clips(jobs, services.runner)
-    digests = {**manifest.get("images", {}), **{t.id: image_digest(t.path) for t in targets}}
-    write_manifest(work, config, _frame_map(all_ids, frames), digests)
+    current = {t.id for t in spec.targets(work)}  # 清单里 shots.json 已经没有的图（比如改分层前的整图）不再带下去
+    digests = {k: v for k, v in {**manifest.get("images", {}), **_digests(targets)}.items() if k in current}
+    redone = {sid: look for sid, look in shot_looks(spec.shots, digests).items() if sid in ids}
+    write_manifest(work, config, _frame_map(all_ids, frames), digests, {**manifest.get("looks", {}), **redone})
     with _stage(timings, "final"):
         out.parent.mkdir(parents=True, exist_ok=True)
         final_mix(work, all_ids, timeline.total, bgm, out, services.runner)

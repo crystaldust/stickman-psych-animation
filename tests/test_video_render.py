@@ -24,7 +24,7 @@ def _shots(*ids):
 
 
 def test_clip_filter_shifts_subtitles_to_the_clip_place_on_the_timeline():
-    vf = clip_filter(start_frame=300, frames=90, subs="/w/subs.ass", is_last=False)
+    vf = clip_filter(start_frame=300, subs="/w/subs.ass")
 
     shift = vf.index("setpts=PTS-STARTPTS+300/30/TB")
     assert shift < vf.index("subtitles=/w/subs.ass") < vf.rindex("setpts=PTS-STARTPTS")
@@ -33,19 +33,15 @@ def test_clip_filter_shifts_subtitles_to_the_clip_place_on_the_timeline():
     assert "pad=" not in vf
 
 
-def test_only_the_last_clip_gets_the_crt_power_off():
-    vf = clip_filter(start_frame=0, frames=90, subs="s.ass", is_last=True)
+def test_clips_end_on_their_own_last_frame_without_a_power_off():
+    # 用户不要结尾的 CRT 关机动画（向上压扁、背景变绿），成片停在最后一帧。
+    vf = clip_filter(start_frame=0, subs="s.ass")
 
-    assert "pad=1920:1080" in vf and "fade=t=out:st=2.75:d=0.25" in vf
-
-
-def test_last_clip_too_short_for_the_power_off_is_an_error():
-    with pytest.raises(VideoError):
-        clip_filter(start_frame=0, frames=20, subs="s.ass", is_last=True)
+    assert "pad=" not in vf and "fade=" not in vf and "eval=frame," not in vf.split("subtitles=")[1]
 
 
 def test_subtitle_path_is_escaped():
-    assert "subtitles=/a\\,b.ass" in clip_filter(0, 90, "/a,b.ass", False)
+    assert "subtitles=/a\\,b.ass" in clip_filter(0, "/a,b.ass")
 
 
 def test_clip_jobs_split_frames_and_mark_the_last(tmp_path):
@@ -53,7 +49,7 @@ def test_clip_jobs_split_frames_and_mark_the_last(tmp_path):
 
     jobs = clip_jobs(work, _shots("s01", "s02"), (0, 82, 172))
 
-    assert [(j.shot_id, j.start_frame, j.frames, j.is_last) for j in jobs] == [("s01", 0, 82, False), ("s02", 82, 90, True)]
+    assert [(j.shot_id, j.start_frame, j.frames) for j in jobs] == [("s01", 0, 82), ("s02", 82, 90)]
     assert jobs[0].image == work.image("s01") and jobs[1].out == work.clip("s02")
 
 
@@ -104,7 +100,7 @@ def test_manifest_round_trip_and_image_digest(tmp_path):
     work.image("s01").write_bytes(b"jpg")
     digest = image_digest(work.image("s01"))
 
-    write_manifest(work, VideoConfig(), {"s01": 82}, {"s01": digest})
+    write_manifest(work, VideoConfig(), {"s01": 82}, {"s01": digest}, {"s01": "look"})
 
     manifest = read_manifest(work)
     assert manifest["frames"] == {"s01": 82}

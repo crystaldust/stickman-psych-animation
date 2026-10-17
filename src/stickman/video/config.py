@@ -39,7 +39,10 @@ VOICE_TRUE_PEAK = -2
 BGM_GAIN_DB = -21
 BGM_FADE_IN = 2.0
 BGM_FADE_OUT = 3.0
-OFF_DUR = 0.8  # 最后一个镜头的 CRT 关机动画时长
+# 画面效果的版本：改了会改变片段画面的代码（质感、摆动、分层合成）就加一。
+# 成片清单按它记每个镜头的画面指纹，英文版据此确认中文版是用同一版效果渲染的。
+# 2：修了发光；3：去掉结尾的 CRT 关机动画。
+LOOK_VERSION = 3
 
 ENCODER = "h264_videotoolbox"
 TTS_ENDPOINT = "https://openspeech.bytedance.com/api/v3/tts/create"

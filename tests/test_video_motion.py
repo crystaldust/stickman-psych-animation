@@ -108,8 +108,8 @@ def test_key_colours_match_the_recipes():
     assert scale.key("prop") == GREEN and scale.key("bg") is None
 
 
-@pytest.mark.parametrize("n, cap", [(2, 0), (3, 1), (14, 4), (18, 6)])
-def test_at_most_a_third_of_the_shots_may_be_layered(n, cap):
+@pytest.mark.parametrize("n, cap", [(1, 0), (2, 1), (3, 1), (14, 7), (17, 8)])
+def test_at_most_half_of_the_shots_may_be_layered(n, cap):
     assert max_layered(n) == cap
 
 
