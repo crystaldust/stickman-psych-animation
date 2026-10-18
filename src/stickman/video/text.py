@@ -10,7 +10,11 @@ HOMOPHONES = (
     (re.compile(r"(?<![A-Za-z])ta(?![A-Za-z])"), "他"),
     (re.compile("倒放"), "到放"),
 )
-_SUB_BREAK = re.compile(r"(?<=[，。：！？、；])")
+# 在标点后断开；标点后面紧跟着的后引号、后书名号、后括号（可能叠好几个）都跟着这一条，免得跑到下一条字幕。
+_SUB_BREAK = re.compile(r"[，。：！？、；][”」』》）]*")
+# 硬切字幕时不可拆的单位：一个书名（《…》），或一个字连同贴着它的前引号、后引号。
+_SUB_ATOM = re.compile(r"[“「『（]*(?:《[^《》]*》|.)[”」』）]*")
+_SUB_TRAIL = re.compile(r"[，。、；]+(?=[”」』》）]*$)")
 _SPOKEN_CHAR = re.compile(r"[一-鿿0-9A-Za-z]")
 _EN_SPOKEN = re.compile(r"[a-z0-9]")
 # 断句：句末标点（或分号、冒号）后面跟着大写开头的词才断，「wait... and then」这类不断。
@@ -36,16 +40,23 @@ def norm(text: str) -> str:
     return "".join(_SPOKEN_CHAR.findall(apply_homophones(text)))
 
 
+def _hard_split(text: str) -> list[str]:
+    """超过 MAX_SUB_CHARS 的一段按字数硬切，但不拆书名、不让引号落单；书名本身超长才拆开它。"""
+    out, line = [], ""
+    for atom in _SUB_ATOM.findall(text):
+        for piece in (atom if len(atom) > MAX_SUB_CHARS else (atom,)):
+            if line and len(line) + len(piece) > MAX_SUB_CHARS:
+                out.append(line)
+                line = ""
+            line += piece
+    return out + [line] if line else out
+
+
 def split_sub(text: str) -> list[str]:
-    """一行旁白切成字幕：按标点断开，过长的再按 MAX_SUB_CHARS 硬切，去掉句末标点。"""
+    """一行旁白切成字幕：按标点断开，过长的再按 MAX_SUB_CHARS 硬切，去掉句末标点（后引号、后书名号留着）。"""
     out = []
-    for chunk in (c for c in _SUB_BREAK.split(text) if c.strip()):
-        rest = chunk.strip().rstrip("，。、；")
-        while len(rest) > MAX_SUB_CHARS:
-            out.append(rest[:MAX_SUB_CHARS])
-            rest = rest[MAX_SUB_CHARS:]
-        if rest:
-            out.append(rest)
+    for chunk in (c for c in _SUB_BREAK.sub(lambda m: m.group() + "\n", text).split("\n") if c.strip()):
+        out += _hard_split(_SUB_TRAIL.sub("", chunk.strip()))
     return out
 
 

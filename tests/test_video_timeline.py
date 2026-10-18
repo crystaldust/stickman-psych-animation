@@ -37,6 +37,24 @@ def test_split_sub_breaks_on_punctuation_and_long_runs():
     assert split_sub("「我一个人可以」，") == ["「我一个人可以」"]
 
 
+def test_split_sub_never_cuts_a_book_title():
+    # 回归：书名号的后半个被切到下一条字幕里。
+    assert split_sub("一九二一年，弗洛伊德在《群体心理学与自我分析》里写道：") == [
+        "一九二一年", "弗洛伊德在", "《群体心理学与自我分析》里写道："]
+    long_title = "在《" + "一" * 20 + "》里"  # 书名本身超长才拆，拆完不丢字
+    assert "".join(split_sub(long_title)) == long_title and max(map(len, split_sub(long_title))) <= 16
+
+
+def test_split_sub_keeps_closing_quotes_with_their_line():
+    # 回归：句末的后引号单独成了一条字幕，或者跑到下一条的开头。
+    assert split_sub("“在爱中，自我变得贫乏，对象变得崇高。”") == ["“在爱中", "自我变得贫乏", "对象变得崇高”"]
+    assert split_sub("后面一句是：“何事秋风悲画扇。”") == ["后面一句是：", "“何事秋风悲画扇”"]
+    assert split_sub("他说：“好。”然后走了。") == ["他说：", "“好”", "然后走了"]
+    assert split_sub("一" * 15 + "“好”") == ["一" * 15, "“好”"]
+    assert split_sub("他说：「她说“好。”」然后") == ["他说：", "「她说“好”」", "然后"]  # 叠在一起的后引号都跟着前一条
+    assert split_sub("（他说：“好。”）然后走") == ["（他说：", "“好”）", "然后走"]
+
+
 def test_char_times_maps_each_char_to_its_word():
     meta = word_meta("你好，世界。")
 
