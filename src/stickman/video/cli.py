@@ -10,7 +10,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from . import pipeline
-from .config import VideoConfig, load_config
+from .config import IMAGE_MODELS, VideoConfig, load_config
 from .draft import read_draft, write_workdir
 from .errors import VideoError
 from .lang import LANGS, PRIMARY
@@ -89,7 +89,8 @@ def _prepare(args: argparse.Namespace) -> tuple[WorkDir, VideoConfig, Path]:
     work = WorkDir(inside_project(args.work), args.lang)
     safe_slug(work.root.name)  # 目录名会进 ffmpeg 滤镜参数，= 之类的字符会让它解析失败
     speaker_field = LANGS[work.lang].speaker_field  # --speaker 只换当前语言的音色
-    config = load_config(work.root, {"ref_image": args.ref, speaker_field: args.speaker, "bgm": args.bgm})
+    config = load_config(work.root, {"ref_image": args.ref, speaker_field: args.speaker, "bgm": args.bgm,
+                                      "image_model": args.image_model})
     # 参考图会上传给出图接口，BGM 会被读进成片：都限制在项目内（会解析符号链接）。
     config = replace(config, ref_image=str(inside_project(config.ref_image)), bgm=str(inside_project(config.bgm)))
     return work, config, _output(args.out, work)
@@ -126,6 +127,8 @@ def _add_media_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--ref", help="角色参考图（默认见 config.py，可在工作目录的 video.json 里覆盖）")
     parser.add_argument("--speaker", help="当前语言的配音音色 id")
     parser.add_argument("--bgm", help="背景音乐")
+    parser.add_argument("--image-model", choices=IMAGE_MODELS,
+                        help=f"出图模型，默认 {IMAGE_MODELS[0]}；只影响这次要新出的图，已有的图不会重出")
 
 
 def build_parser(prog: str) -> argparse.ArgumentParser:

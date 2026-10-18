@@ -120,6 +120,7 @@ uv run stickman video reshoot data/videos/20261014-jie-jing s02 s07   # 只重�
 - 旁白改过以后，对应镜头的旧配音会被拒绝（不会自动重新配音计费），删掉 `voice/<id>.mp3` 再跑。
 - `reshoot` 要求时间线和编码参数和上次 `render` 一致（记在 `render.json`），旧图移到 `img_rejected/`；`--no-generate` 只重渲不出图。
 - 参考图、音色、BGM 等默认值在 `src/stickman/video/config.py`，单条视频可在工作目录放 `video.json` 覆盖（只接受已知参数）。
+- 出图模型用 `--image-model` 选（`render` / `reshoot`），可选 `doubao-seedream-5-0-pro-260628`（默认）和 `doubao-seedream-5-0-flash-260915`，也可以在 `video.json` 里写 `image_model`。只影响这次要新出的图，已有的图不会重出。
 - 多音字在 `src/stickman/video/text.py` 的 `HOMOPHONES` 里用同音字替换，只影响配音，字幕保留原文。
 
 ### 分层镜头

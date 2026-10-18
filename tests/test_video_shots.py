@@ -3,7 +3,7 @@ import json
 import pytest
 
 from stickman.video import cli
-from stickman.video.config import VideoConfig, load_config
+from stickman.video.config import IMAGE_MODELS, VideoConfig, load_config
 from stickman.video.errors import VideoError
 from stickman.video.shots import load_spec, shot_lines
 from stickman.video.workdir import WorkDir
@@ -120,6 +120,32 @@ def test_config_file_rejects_unknown_keys_and_bad_values(tmp_path, content):
 
     with pytest.raises(VideoError):
         load_config(tmp_path)
+
+
+def test_config_image_model_must_be_one_of_the_listed_models(tmp_path):
+    (tmp_path / "video.json").write_text('{"image_model": "doubao-seedream-5-0-flash-260915"}', encoding="utf-8")
+    assert load_config(tmp_path).image_model == "doubao-seedream-5-0-flash-260915"
+    assert VideoConfig().image_model == IMAGE_MODELS[0] == "doubao-seedream-5-0-pro-260628"
+
+    with pytest.raises(VideoError) as exc:
+        load_config(tmp_path, {"image_model": "doubao-seedream-4-0"})
+    assert "doubao-seedream-5-0-flash-260915" in str(exc.value)
+
+
+def test_cli_image_model_flag_picks_the_model(tmp_path, monkeypatch):
+    (tmp_path / "w").mkdir()
+    work = _work(tmp_path / "w", [_shot("s01", 1)])
+    for name in ("ref.jpg", "bgm.mp3"):
+        (tmp_path / name).write_bytes(b"x")
+    monkeypatch.chdir(tmp_path)
+    parser = cli.build_parser("stickman video")
+    base = ["render", work.root.name, "--ref", "ref.jpg", "--bgm", "bgm.mp3"]
+
+    args = parser.parse_args([*base, "--image-model", "doubao-seedream-5-0-flash-260915"])
+    assert cli._prepare(args)[1].image_model == "doubao-seedream-5-0-flash-260915"
+    assert cli._prepare(parser.parse_args(base))[1].image_model == IMAGE_MODELS[0]
+    with pytest.raises(SystemExit):
+        parser.parse_args([*base, "--image-model", "other"])
 
 
 GLOW = {"type": "glow", "color": "#F9E440"}

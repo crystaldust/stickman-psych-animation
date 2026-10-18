@@ -48,6 +48,8 @@ ENCODER = "h264_videotoolbox"
 TTS_ENDPOINT = "https://openspeech.bytedance.com/api/v3/tts/create"
 IMAGE_ENDPOINT = "https://ark.cn-beijing.volces.com/api/v3/images/generations"
 IMAGE_SIZE = "1920x1080"
+# 可选的出图模型，第一个是默认：pro 画面更稳；flash 更快更便宜（用户要求加入，可用 --image-model 或 video.json 切换）。
+IMAGE_MODELS = ("doubao-seedream-5-0-pro-260628", "doubao-seedream-5-0-flash-260915")
 # 出图接口返回的下载链接只接受这些域名（及其子域名）。
 IMAGE_HOSTS = ("volces.com", "volccdn.com")
 MAX_IMAGE_BYTES = 20 * 1024 * 1024
@@ -87,7 +89,7 @@ class VideoConfig:
     bgm: str = "data/pilot/bgm/mangguohuami-from3.5.mp3"
     speech_rate: int = 10
     speech_rate_en: int = 5  # 英文用 10 太赶，用户在豆包网页上试听选定 5
-    image_model: str = "doubao-seedream-5-0-pro-260628"
+    image_model: str = IMAGE_MODELS[0]
     tts_model: str = "seed-audio-1.0"
     img_workers: int = 8
     tts_workers: int = 4
@@ -108,6 +110,8 @@ def _checked(values: dict[str, Any], origin: str) -> dict[str, Any]:
             raise VideoError(f"{origin} 的 {name} 应该是 {expected.__name__}")
         if name.endswith("_workers") and not 1 <= value <= MAX_WORKERS:
             raise VideoError(f"{origin} 的 {name} 应在 1–{MAX_WORKERS} 之间")
+        if name == "image_model" and value not in IMAGE_MODELS:
+            raise VideoError(f"{origin} 的 image_model 只能是 {' / '.join(IMAGE_MODELS)}")
     return values
 
 
