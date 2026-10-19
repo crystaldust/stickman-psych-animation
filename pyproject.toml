@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "jieba>=0.42.1,<0.43",  # 换版本可能改变字幕切点
     "mlx-whisper>=0.4.3",
     "yt-dlp>=2026.8.19",
 ]
@@ -33,3 +34,9 @@ dev = [
 testpaths = ["tests"]
 pythonpath = ["tests"]
 addopts = "-q"
+filterwarnings = ["ignore::SyntaxWarning:jieba.*"]  # jieba 0.42.1 的正则在 3.12 上报无效转义
+
+[tool.coverage.run]
+# 默认的 CTracer 下 jieba 初始化要好几分钟（不开覆盖率只要 0.5 秒）；sys.monitoring 不追踪 stickman 以外的代码。
+# 3.12 上 sysmon 不支持 branch 覆盖，要开 --cov-branch 得另想办法
+core = "sysmon"

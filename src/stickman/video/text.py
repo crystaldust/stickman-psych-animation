@@ -1,8 +1,14 @@
 """旁白文本的几种形态：送去配音的、带时间戳的、上字幕的。"""
 
+import logging
 import re
 
+import jieba
+import jieba.posseg as pseg
+
 from .config import MAX_SUB_CHARS, MAX_SUB_CHARS_EN
+
+jieba.setLogLevel(logging.WARNING)  # 不打印加载词典的进度
 
 # 配音模型会读错的词 → 同音字，只用在配音上，字幕保留原文。
 # ta 只替换单独出现的 ta，英文单词里的（data、start）不动。
@@ -15,6 +21,14 @@ _SUB_BREAK = re.compile(r"[，。：！？、；][”」』》）]*")
 # 硬切字幕时不可拆的单位：一个书名（《…》），或一个字连同贴着它的前引号、后引号。
 _SUB_ATOM = re.compile(r"[“「『（]*(?:《[^《》]*》|.)[”」』）]*")
 _SUB_TRAIL = re.compile(r"[，。、；]+(?=[”」』》）]*$)")
+# 长字幕切在哪个词后面：jieba 词性里，介词、连词、副词、代词粘着后面的词，助词、语气词、方位词粘着前面的词。
+# 按前缀匹配（p 也匹配 pba、pbei）；zg 是 jieba 给「很」这类字标的词性。
+_BINDS_NEXT = ("p", "c", "d", "r", "zg")
+_BINDS_PREV = ("u", "y", "f")
+# 切点别扭时，折算成「离均分点多出几个字」的罚分；切在引号里面罚得更重。
+_AWKWARD_CUT = 3
+_INSIDE_QUOTE_CUT = 6
+_SUB_QUOTED = re.compile(r"「[^「」]*」|“[^“”]*”|《[^《》]*》")
 _SPOKEN_CHAR = re.compile(r"[一-鿿0-9A-Za-z]")
 _EN_SPOKEN = re.compile(r"[a-z0-9]")
 # 断句：句末标点（或分号、冒号）后面跟着大写开头的词才断，「wait... and then」这类不断。
@@ -40,8 +54,44 @@ def norm(text: str) -> str:
     return "".join(_SPOKEN_CHAR.findall(apply_homophones(text)))
 
 
+def _awkward(word, nxt) -> bool:
+    """在 word 和 nxt 之间切开读着别扭：一边粘着另一边，或挨着单字（词典里没有的人名会被拆成单字）。"""
+    if word.flag.startswith(_BINDS_NEXT) or nxt.flag.startswith(_BINDS_PREV):
+        return True
+    lone = (len(word.word) == 1 or len(nxt.word) == 1) and "x" not in (word.flag, nxt.flag)
+    return lone and not word.flag.startswith(_BINDS_PREV) and not nxt.flag.startswith(_BINDS_NEXT)
+
+
+def _cut_costs(text: str) -> dict[int, int]:
+    """能下刀的位置 → 罚分。只切在词和词之间，不拆书名，不让引号落单。"""
+    atom_ends = {m.end() for m in _SUB_ATOM.finditer(text)}
+    quoted = {i for m in _SUB_QUOTED.finditer(text) for i in range(m.start() + 1, m.end())}
+    words = list(pseg.cut(text, HMM=False))
+    costs, pos = {}, 0
+    for word, nxt in zip(words, words[1:]):
+        pos += len(word.word)
+        if pos in atom_ends:
+            costs[pos] = _AWKWARD_CUT * _awkward(word, nxt) + _INSIDE_QUOTE_CUT * (pos in quoted)
+    return costs
+
+
+def _word_split(text: str) -> list[str] | None:
+    """过长的一段均分成尽量少的几条，每刀切在离均分点近、又不别扭的词边界上；切不出来返回 None。"""
+    costs = _cut_costs(text)
+    out, start = [], 0
+    for left in range(-(-len(text) // MAX_SUB_CHARS), 1, -1):
+        target = start + (len(text) - start) / left
+        fits = [c for c in costs if 0 < c - start <= MAX_SUB_CHARS and len(text) - c <= MAX_SUB_CHARS * (left - 1)]
+        if not fits:
+            return None
+        cut = min(fits, key=lambda c: (abs(c - target) + costs[c], c))
+        out.append(text[start:cut].strip())
+        start = cut
+    return out + [text[start:].strip()]
+
+
 def _hard_split(text: str) -> list[str]:
-    """超过 MAX_SUB_CHARS 的一段按字数硬切，但不拆书名、不让引号落单；书名本身超长才拆开它。"""
+    """找不到合适词边界时的退路：按字数硬切，但不拆书名、不让引号落单；书名本身超长才拆开它。"""
     out, line = [], ""
     for atom in _SUB_ATOM.findall(text):
         for piece in (atom if len(atom) > MAX_SUB_CHARS else (atom,)):
@@ -53,10 +103,14 @@ def _hard_split(text: str) -> list[str]:
 
 
 def split_sub(text: str) -> list[str]:
-    """一行旁白切成字幕：按标点断开，过长的再按 MAX_SUB_CHARS 硬切，去掉句末标点（后引号、后书名号留着）。"""
+    """一行旁白切成字幕：按标点断开，超过 MAX_SUB_CHARS 的在词边界上均分，去掉句末标点（后引号、后书名号留着）。"""
     out = []
     for chunk in (c for c in _SUB_BREAK.sub(lambda m: m.group() + "\n", text).split("\n") if c.strip()):
-        out += _hard_split(_SUB_TRAIL.sub("", chunk.strip()))
+        chunk = _SUB_TRAIL.sub("", chunk.strip())
+        if len(chunk) <= MAX_SUB_CHARS:
+            out += [chunk] if chunk else []
+        else:
+            out += _word_split(chunk) or _hard_split(chunk)
     return out
 
 

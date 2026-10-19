@@ -33,8 +33,22 @@ def test_norm_counts_one_char_per_timestamped_word():
 
 def test_split_sub_breaks_on_punctuation_and_long_runs():
     assert split_sub("奇怪的是，真正谈过的那几段，") == ["奇怪的是", "真正谈过的那几段"]
-    assert split_sub("一" * 20) == ["一" * 16, "一" * 4]
+    parts = split_sub("一" * 20)  # 过长的一段均分，不是数满 16 个字再切
+    assert "".join(parts) == "一" * 20 and max(map(len, parts)) <= 16 and min(map(len, parts)) >= 8
     assert split_sub("「我一个人可以」，") == ["「我一个人可以」"]
+    assert split_sub("，你好。。") == ["你好"]  # 只剩标点的片段不出空字幕
+
+
+def test_split_sub_cuts_long_runs_between_words():
+    # 回归：数满 16 个字硬切，「日子」的「子」单独成了一条。
+    assert split_sub("你会突然很想念刚认识ta的那段日子。") == ["你会突然很想念", "刚认识ta的那段日子"]
+    assert split_sub("他们请 29 位确诊广泛性焦虑障碍的大学生，") == ["他们请 29 位确诊", "广泛性焦虑障碍的大学生"]
+    # 词典里没有的人名不拆；介词跟着后面走
+    assert split_sub("它出自清代词人纳兰性德的《木兰花令》，") == ["它出自清代词人", "纳兰性德的《木兰花令》"]
+    assert split_sub("法国作家司汤达在《论爱情》里讲过一个比喻。") == ["法国作家司汤达", "在《论爱情》里讲过一个比喻"]
+    # 不在引号中间切
+    assert split_sub("消息变成了「到家了吗」「晚饭吃什么」。") == ["消息变成了「到家了吗」", "「晚饭吃什么」"]
+    assert split_sub("「ta到底喜不喜欢我」这个问题没有答案。") == ["「ta到底喜不喜欢我」", "这个问题没有答案"]
 
 
 def test_split_sub_never_cuts_a_book_title():
@@ -50,7 +64,8 @@ def test_split_sub_keeps_closing_quotes_with_their_line():
     assert split_sub("“在爱中，自我变得贫乏，对象变得崇高。”") == ["“在爱中", "自我变得贫乏", "对象变得崇高”"]
     assert split_sub("后面一句是：“何事秋风悲画扇。”") == ["后面一句是：", "“何事秋风悲画扇”"]
     assert split_sub("他说：“好。”然后走了。") == ["他说：", "“好”", "然后走了"]
-    assert split_sub("一" * 15 + "“好”") == ["一" * 15, "“好”"]
+    parts = split_sub("一" * 15 + "“好”")
+    assert parts[-1].endswith("“好”") and not any(p.startswith("”") or p.endswith("“") for p in parts)
     assert split_sub("他说：「她说“好。”」然后") == ["他说：", "「她说“好”」", "然后"]  # 叠在一起的后引号都跟着前一条
     assert split_sub("（他说：“好。”）然后走") == ["（他说：", "“好”）", "然后走"]
 
