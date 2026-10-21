@@ -20,6 +20,7 @@
 ⑧ 渲染成片       （render 内）逐镜头片段 → 拼接 → 混 BGM → data/videos/<slug>/<slug>.mp4
 ⑨ 检查与返工     看联系表 → stickman video reshoot <dir> <镜头>
 ⑩ 英文版         /translate-script → 人审译文 → render --lang en → <slug>.en.mp4
+⑪ 发布信息       /package-video → publish.json → stickman video package → 标题、简介、封面图
 ```
 
 外部服务：火山方舟 **Seedream**（出图）、豆包 **seed-audio**（配音，复刻音色）、本机 **mlx-whisper**（转写参考文案）、本机 **ffmpeg**（剪辑）。
@@ -30,9 +31,14 @@
 - Python 3.12、[uv](https://docs.astral.sh/uv/)、ffmpeg（`brew install ffmpeg`）
 - 第一次转写会下载 `mlx-community/whisper-large-v3-turbo` 模型（约 1.6GB）
 - API key 只从 macOS 钥匙串读，不写进任何文件：`ark-api-key`（出图）、`volc-tts-key`（配音）
+- 封面字体：[得意黑 Smiley Sans](https://github.com/atelier-anchor/smiley-sans)（OFL，可商用），不入 git，要自己下载放到 `data/fonts/`：
+
 ```bash
 uv sync
 uv run stickman --help
+mkdir -p data/fonts && curl -sSL -o /tmp/smiley.zip \
+  https://github.com/atelier-anchor/smiley-sans/releases/download/v2.0.1/smiley-sans-v2.0.1.zip \
+  && unzip -o -j /tmp/smiley.zip SmileySans-Oblique.ttf -d data/fonts/
 ```
 
 统一入口是 `stickman <子命令>`：`bili`（采集）、`corpus` / `analysis` / `library` / `draft`（文案）、`video`（做视频）。
@@ -282,13 +288,41 @@ uv run stickman video reshoot data/videos/20261014-dan-xin s03 --lang en --no-ge
 - 英文版的产物带 `.en` / `_en`：`narration.en.txt`、`voice_en/`、`clips_en/`、`subs.en.ass`、`subs.en.srt`、`render.en.json`、`<slug>.en.mp4`。
 - 译文改过的行，删掉对应的 `voice_en/<id>.mp3` 再渲染。
 
+## ⑪ 发布信息：标题、简介、封面
+
+```bash
+/package-video data/videos/20261019-tui-kai          # Claude 挑封面镜头、写标题、简介、出处和封面字 → publish.json
+uv run stickman video package data/videos/20261019-tui-kai             # → title.txt、description.txt、thumbnail.jpg、thumbnail-3x4.jpg
+/package-video data/videos/20261014-dan-xin en       # 英文版 → publish.en.json
+uv run stickman video package data/videos/20261014-dan-xin --lang en   # → title.en.txt、description.en.txt、thumbnail.en.jpg
+```
+
+`publish.json` 由 Claude 按 `.claude/skills/package-video` 写，命令只做校验和生成：
+
+```json
+{"title": "越怕失去一个人，越容易把ta推开",
+ "description": "ta两个小时没回消息……（两三句）",
+ "sources": [{"author": "罗伯特·默顿", "title": "社会理论与社会结构", "kind": "book", "detail": "1968",
+              "note": "《自我实现的预言》（1948）一文收在此书中", "link": ""}],
+ "thumbnail": {"shot": "s09", "text": "越怕失去\n**越推开**"}}
+```
+
+- **简介** = 正文 + 自动排版的「本期出处」。出处优先写成图书（文章收在哪本书里就写那本书），其次是论文、访谈、演讲、文章（`kind`：book / paper / interview / lecture / article）。`link` 留给以后的商品链接，填了就在出处下面多一行「链接：…」。
+- **出处防编造**：中文版每条出处的 `author` 必须和草稿 front matter 里的作者一字不差（默认草稿 `drafts/<目录名>.md`，可用 `--draft` 指定）；英文版的出处条数要和中文版一一对应。草稿 locator 里没有的版本信息，要先派 `source-hunter` 核实。
+- **平台限制**：标题最多 100 个字符；中文简介连同出处最多 1000 字（抖音），英文最多 5000 字节（YouTube）；都不能有 `<` `>`。
+- **封面**：中文出 16:9（YouTube、抖音横屏）和 3:4 竖版（抖音），英文只出 16:9。
+  - 从所选镜头的整幅图里取背景主色和人物范围，在同色画布上把人物放大摆到一侧（竖版在下方），另一侧排大字。分层镜头没有整幅图，不能做封面，`glow` 镜头可以。
+  - 字用得意黑（本身是倾斜粗体），整体再旋转 6–7°，每行左右错开；白字配深色描边和同色系的立体厚度，`**整行**` 包住的强调行用背景色的互补色（灰背景用暖黄）并且更大。
+  - 封面字一到三行，每行中文最好不超过 6 个字，英文用大写短语；字号按文字框自动算，字越少越大。
+  - 画面最后加和视频一致的轻微色差、暗角和颗粒。
+
 ## 目录结构
 
 ```
 src/stickman/collect/bilibili/   # 采集与转写
 src/stickman/writing/            # 文案：读取、分析校验、出处库、查重
 src/stickman/video/              # 视频：分镜、出图、配音、时间线、字幕、合成
-.claude/skills/                  # analyze-script / write-script / translate-script
+.claude/skills/                  # analyze-script / write-script / translate-script / package-video
 .claude/agents/source-hunter.md  # 引用核实 agent
 docs/style-guide.md              # 写稿硬性约束
 analysis/  library/              # 分析结果和出处库（入 git）
@@ -301,6 +335,7 @@ data/videos/<slug>/
   voice/  voice_trim/  voice.wav # 配音
   subs.ass  subs.srt             # 字幕
   clips/  render.json  timings.json
+  publish.json  title.txt  description.txt  thumbnail.jpg  thumbnail-3x4.jpg   # 发布信息
   <slug>.mp4                     # 成片（英文版另有 *.en.* / *_en/）
 ```
 

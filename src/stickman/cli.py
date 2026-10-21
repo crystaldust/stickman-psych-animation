@@ -25,7 +25,7 @@ COMMANDS: dict[str, tuple[str, Handler]] = {
     "analysis": ("文案分析结果：save / show / list", lambda argv: writing_cli.analysis_main(argv)),
     "library": ("出处库：build / show", lambda argv: writing_cli.library_main(argv)),
     "draft": ("草稿查重：check", lambda argv: writing_cli.draft_main(argv)),
-    "video": ("做视频：init / check / render / reshoot", _run_video),
+    "video": ("做视频：init / check / render / reshoot / package", _run_video),
 }
 
 

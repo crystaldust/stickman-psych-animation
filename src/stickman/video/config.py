@@ -95,6 +95,8 @@ class VideoConfig:
     tts_workers: int = 4
     render_workers: int = 6
     video_bitrate: str = "4M"
+    # 封面字体：得意黑（倾斜粗体，OFL 可商用），不入 git，下载方法见 README
+    thumb_font: str = "data/fonts/SmileySans-Oblique.ttf"
 
 
 _TYPES = {f.name: type(getattr(VideoConfig(), f.name)) for f in fields(VideoConfig)}

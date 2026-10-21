@@ -1,4 +1,4 @@
-"""stickman video：init / check / render / reshoot。
+"""stickman video：init / check / render / reshoot / package。
 
 每个动作是一个 _cmd_* 函数，通过 set_defaults(handler=...) 挂到子命令上；错误统一由 _run 转成退出码。
 """
@@ -9,7 +9,7 @@ from dataclasses import replace
 from collections.abc import Callable
 from pathlib import Path
 
-from . import pipeline
+from . import pipeline, publish
 from .config import IMAGE_MODELS, VideoConfig, load_config
 from .draft import read_draft, write_workdir
 from .errors import VideoError
@@ -21,6 +21,7 @@ from .workdir import WorkDir, inside_project, safe_slug
 EXIT_OK = 0
 EXIT_FAILED = 1
 DEFAULT_VIDEOS_DIR = "data/videos"
+DEFAULT_DRAFTS_DIR = "drafts"
 CHECK_PREVIEW_CHARS = {"zh": 24, "en": 60}  # check 每个镜头预览的旁白长度
 
 Handler = Callable[[argparse.Namespace], int]
@@ -115,6 +116,16 @@ def _cmd_reshoot(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def _cmd_package(args: argparse.Namespace) -> int:
+    work = WorkDir(inside_project(args.work), args.lang)
+    safe_slug(work.root.name)
+    config = load_config(work.root)
+    draft = inside_project(args.draft or Path(DEFAULT_DRAFTS_DIR) / f"{work.root.name}.md")
+    outputs = publish.package(work, inside_project(config.thumb_font), draft, _services().runner)
+    print("已写入：\n  " + "\n  ".join(str(p) for p in outputs))
+    return EXIT_OK
+
+
 def _add_lang_arg(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--lang", choices=tuple(LANGS), default=PRIMARY,
                         help=f"语言版本，默认 {PRIMARY}；en 读 narration.en.txt，共用中文版的图，出 <目录名>.en.mp4")
@@ -157,6 +168,12 @@ def build_parser(prog: str) -> argparse.ArgumentParser:
     reshoot.add_argument("shots", nargs="+", help="镜头 id，例如 s02 s07")
     reshoot.add_argument("--no-generate", action="store_true", help="不重新出图，只用现有的图重渲")
     reshoot.set_defaults(handler=_cmd_reshoot)
+
+    pack = sub.add_parser("package", help="发布信息：按 publish.json 写 title.txt、description.txt，出封面")
+    pack.add_argument("work", help="工作目录，例如 data/videos/<slug>")
+    _add_lang_arg(pack)
+    pack.add_argument("--draft", help=f"核对出处用的草稿，默认 {DEFAULT_DRAFTS_DIR}/<目录名>.md")
+    pack.set_defaults(handler=_cmd_package)
     return parser
 
 

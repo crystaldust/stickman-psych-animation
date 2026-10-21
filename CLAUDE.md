@@ -9,6 +9,7 @@
 - 已有工具：`stickman bili`（别名 `bili-collect`，代码在 `src/stickman/collect/bilibili/`），采集 B 站 up 主的视频元数据、音视频，并用 mlx-whisper 转写文案，用法见 `README.md`。
 - `stickman video init / check / render / reshoot`：把定稿文案做成视频，见下面「视频流水线」。
 - 英文版：`/translate-script <工作目录>` 意译出 `narration.en.txt`，用户审过后 `render --lang en`，见下面「英文版」。
+- 发布信息：`/package-video <工作目录> [en]` 写 `publish.json`（标题、简介、出处、封面镜头和封面字），`stickman video package` 校验并生成 `title.txt`、`description.txt` 和封面图（中文 16:9 + 3:4，英文 16:9）。出处只能用草稿 front matter 里核实过的作者，优先写成图书，`link` 留给商品链接。封面字体得意黑放在 `data/fonts/`（不入 git，下载见 README）。
 
 ## 开发流程（默认遵守，不需要用户每次提醒）
 

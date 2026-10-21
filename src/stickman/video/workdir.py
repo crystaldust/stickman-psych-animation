@@ -110,6 +110,27 @@ class WorkDir:
     def layers_dir(self) -> Path:
         return self.root / "layers"
 
+    @property
+    def publish(self) -> Path:
+        """Claude 写的发布信息：标题、简介、出处、封面用哪个镜头和什么字。"""
+        return self._file("publish", ".json")
+
+    @property
+    def title(self) -> Path:
+        return self._file("title", ".txt")
+
+    @property
+    def description(self) -> Path:
+        return self._file("description", ".txt")
+
+    @property
+    def package_tmp(self) -> Path:
+        return self._dir("package_tmp")
+
+    def thumbnail(self, layout: str) -> Path:
+        """封面：16x9 是 thumbnail.jpg，其他比例带后缀，比如 thumbnail-3x4.jpg。"""
+        return self._file("thumbnail" if layout == "16x9" else f"thumbnail-{_safe(layout, '封面比例')}", ".jpg")
+
     def image(self, shot_id: str) -> Path:
         return self.img_dir / f"{safe_id(shot_id)}.jpg"
 
