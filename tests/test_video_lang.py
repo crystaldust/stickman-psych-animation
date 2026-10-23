@@ -16,7 +16,7 @@ from stickman.video import render as render_mod
 from stickman.video.render import read_manifest
 from stickman.video.shots import load_spec
 from stickman.video.subtitles import SUB_STYLE_EN, srt_document
-from stickman.video.text import norm_en, split_sub_en, spoken_en
+from stickman.video.text import BINDS_NEXT_EN, _awkward_en, norm_en, split_sub_en, spoken_en
 from stickman.video.timeline import char_times, keep_intervals, shot_events
 from stickman.video.workdir import LANG_CODES, WorkDir
 
@@ -44,6 +44,8 @@ def test_split_sub_en_breaks_between_sentences_and_packs_short_clauses():
     assert split_sub_en("At two in the morning, you replay all of tomorrow.") == [
         "At two in the morning", "you replay all of tomorrow"]
     assert split_sub_en("Wait, what if, just once, it went fine?") == ["Wait, what if, just once, it went fine?"]
+    assert split_sub_en("Maybe, maybe not, I honestly can't tell anymore, not tonight anyway.") == [
+        "Maybe, maybe not", "I honestly can't tell anymore", "not tonight anyway"]
 
 
 def test_split_sub_en_does_not_break_before_a_lowercase_word():
@@ -58,6 +60,35 @@ def test_split_sub_en_wraps_long_runs_at_word_boundaries_into_even_pieces():
     assert " ".join(chunks) == text
     assert len(chunks) == 3 and all(len(c) <= 42 for c in chunks)
     assert max(map(len, chunks)) - min(map(len, chunks)) < 15
+
+
+def test_split_sub_en_does_not_leave_articles_or_prepositions_at_the_end_of_a_line():
+    assert split_sub_en("You stopped going to the places you used to go.") == [
+        "You stopped going", "to the places you used to go"]
+    # 真实旁白里原来切坏的句子：切点不能落在冠词、介词、物主代词、连词后面
+    for text in ["And close relationships are one of the most important ways we expand ourselves.",
+                 "A good relationship won't ask you to make yourself smaller to fit inside it.",
+                 "Every thought ends with the worst possible outcome.",
+                 "The study also found that the more of someone's worries failed to come true,",
+                 "Stendhal called the process of falling in love 'crystallization.'",
+                 "So what you can't let go of may not be only that person."]:
+        chunks = split_sub_en(text)
+        assert " ".join(chunks) == text.rstrip(",.")
+        assert len(chunks) <= 3 and all(len(c) <= 42 for c in chunks)
+        assert all(c.split()[-1].lower() not in BINDS_NEXT_EN for c in chunks[:-1]), chunks
+    # 后面紧跟连词时可以切：两个分句本来就该分开
+    assert _awkward_en("the", "places") and _awkward_en("to", "make")
+    assert not _awkward_en("in", "and") and not _awkward_en("going", "to")
+    # 有一个单词本身就超过上限：放不进任何一行，就一个词一行
+    assert split_sub_en("x" * 50 + " end") == ["x" * 50, "end"]
+
+
+def test_split_sub_en_handles_a_very_long_line_without_punctuation():
+    text = " ".join(["word"] * 80)  # 枚举所有切法会组合爆炸，这里要很快出结果
+
+    chunks = split_sub_en(text)
+
+    assert " ".join(chunks) == text and all(len(c) <= 42 for c in chunks) and len(chunks) == 10
 
 
 def test_split_sub_en_never_breaks_a_word():

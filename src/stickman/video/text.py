@@ -35,6 +35,13 @@ _EN_SPOKEN = re.compile(r"[a-z0-9]")
 # 缩写（Mr. Smith）分不出来，所以译文里不要用缩写。
 _EN_SENTENCE = re.compile(r"(?<=[.!?…;:])\s+(?=['‘(]?[A-Z])")
 _EN_CLAUSE = re.compile(r"(?<=,)\s+")
+# 英文长字幕不切在这些词后面：冠词、介词、物主代词、连词都粘着后面的词。
+# 后面紧跟连词时不算（「can get in | and you…」本来就是两个分句）。
+BINDS_NEXT_EN = frozenset(
+    "a an the to of in on at for with from by into onto about than as "
+    "and or but if that because my your his her its our their".split())
+_CLAUSE_START_EN = frozenset("and or but so because if when while".split())
+_AWKWARD_CUT_EN = 12  # 切点别扭时，折算成「离均分点多出几个字符」的罚分
 
 
 def apply_homophones(text: str) -> str:
@@ -127,27 +134,52 @@ def spoken_en(text: str) -> str:
     return text.replace('"', "'").replace("“", "'").replace("”", "'")
 
 
-def _greedy(words: list[str], width: int) -> list[str]:
-    out, line = [], ""
+def _awkward_en(word: str, nxt: str) -> bool:
+    return word.lower() in BINDS_NEXT_EN and nxt.lower().strip("'") not in _CLAUSE_START_EN
+
+
+def _best_cuts(words: list[str], pieces: int, limit: int) -> tuple[int, list[str]] | None:
+    """切成 pieces 行、每行不超过 limit 的切法里，长短最均匀、别扭切点最少的那一种，连同它的别扭切点数；
+    放不下时返回 None。动态规划：best[j][i] 是前 i 个词切成 j 行的最优（代价, 别扭切点数, 上一个切点）。"""
+    ends = [0]
     for word in words:
-        if line and len(line) + 1 + len(word) > width:
-            out.append(line)
-            line = word
-        else:
-            line = f"{line} {word}" if line else word
-    return out + [line]
+        ends.append(ends[-1] + len(word))
+    width = lambda a, b: ends[b] - ends[a] + (b - a - 1)  # noqa: E731 - words[a:b] 用空格连起来的长度
+    target, n = width(0, len(words)) / pieces, len(words)
+    best: list[dict[int, tuple[float, int, int]]] = [{0: (0.0, 0, -1)}] + [{} for _ in range(pieces)]
+    for j in range(1, pieces + 1):
+        for i in range(j, n - (pieces - j) + 1):
+            for k, (cost, awkward, _) in best[j - 1].items():
+                if k >= i or width(k, i) > limit:
+                    continue
+                bad = int(k > 0 and _awkward_en(words[k - 1], words[k]))
+                total = cost + abs(width(k, i) - target) + _AWKWARD_CUT_EN * bad
+                if i not in best[j] or total < best[j][i][0]:
+                    best[j][i] = (total, awkward + bad, k)
+    if n not in best[pieces]:
+        return None
+    lines, i = [], n
+    for j in range(pieces, 0, -1):
+        k = best[j][i][2]
+        lines.append(" ".join(words[k:i]))
+        i = k
+    return best[pieces][n][1], lines[::-1]
 
 
 def _wrap_words(text: str, limit: int) -> list[str]:
-    """超长的一句按单词断成长度相近的几行，不拆单词：取能凑成最少行数的最小行宽。"""
-    if len(text) <= limit:
+    """超长的一句按单词断成尽量少、长度相近的几行，不拆单词，也不把冠词、介词留在行尾。"""
+    words = text.split()
+    if len(text) <= limit or len(words) == 1:
         return [text]
-    words, pieces = text.split(), -(-len(text) // limit)
-    for width in range(len(text) // pieces, limit + 1):
-        lines = _greedy(words, width)
-        if len(lines) <= pieces:
-            return lines
-    return _greedy(words, limit)
+    for pieces in range(-(-len(text) // limit), len(words) + 1):
+        found = _best_cuts(words, pieces, limit)
+        if found is None:
+            continue
+        awkward, lines = found
+        # 最少行数避不开别扭切点时，多切一行能避开就多切一行
+        more = _best_cuts(words, pieces + 1, limit) if awkward and pieces < len(words) else None
+        return more[1] if more and more[0] == 0 else lines
+    return words  # 有单词本身就超过上限：一个词一行
 
 
 def _pack(parts: list[str], limit: int) -> list[str]:
