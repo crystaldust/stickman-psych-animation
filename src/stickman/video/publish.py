@@ -5,9 +5,11 @@ Claude 按 .claude/skills/package-video 写 publish.json（英文版 publish.en.
 免得简介里出现草稿没核实过的来源。出处的 link 先留空，以后加商品链接只改这一个字段。
 """
 
+import hashlib
 import json
 import re
 import shutil
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -16,7 +18,7 @@ from .errors import VideoError
 from .ffmpeg import Runner
 from .lang import PRIMARY
 from .shots import ShotSpec, load_spec
-from .thumbnail import LAYOUTS, Line, make_thumbnail, parse_text
+from .thumbnail import LAYOUTS, Line, make_headline, make_thumbnail, parse_text
 from .workdir import WorkDir
 
 KINDS = {"book": ("图书", "book"), "paper": ("论文", "paper"), "interview": ("访谈", "interview"),
@@ -24,7 +26,7 @@ KINDS = {"book": ("图书", "book"), "paper": ("论文", "paper"), "interview": 
 MAX_TITLE_CHARS = 100  # YouTube 标题上限
 MAX_DESCRIPTION_CHARS = 1000  # 中文版也发抖音，抖音文案上限 1000 字
 MAX_DESCRIPTION_BYTES = 5000  # YouTube 简介上限按字节算
-LAYOUTS_BY_LANG = {PRIMARY: ("16x9", "3x4"), "en": ("16x9",)}  # 3:4 竖版只给抖音（中文）
+LAYOUTS_BY_LANG = {PRIMARY: ("16x9", "3x4", "9x16"), "en": ("16x9",)}  # 3:4、9:16 竖版只给抖音（中文）
 _FIELDS = {"title", "description", "sources", "thumbnail"}
 _SOURCE_REQUIRED = ("author", "title", "kind")
 _SOURCE_OPTIONAL = ("detail", "note", "link")
@@ -221,3 +223,21 @@ def package(work: WorkDir, font: Path, draft: Path, runner: Runner) -> tuple[Pat
     work.title.write_text(pub.title + "\n", encoding="utf-8")
     work.description.write_text(description, encoding="utf-8")
     return (work.title, work.description, *covers.values())
+
+
+@dataclass(frozen=True)
+class Headline:
+    path: Path
+    fingerprint: str  # 封面字、封面镜头的图和字体：三者不变，画出来的字就不变
+
+
+def headline(work: WorkDir, spec: ShotSpec, font: Path, runner: Runner) -> Headline:
+    """竖屏视频顶部的封面字：用 publish.json 里的封面字和封面镜头的配色，写到 work.headline。"""
+    if not font.is_file():
+        raise VideoError(f"找不到封面字体 {font}：下载得意黑（Smiley Sans）的 SmileySans-Oblique.ttf 放到这里，见 README")
+    pub = load_publish(work.publish, spec.ids())
+    image = _cover_image(work, spec, pub.thumbnail.shot)
+    with tempfile.TemporaryDirectory() as tmp:  # 不用 package_tmp：和 package 同时跑时会互相删文件
+        make_headline(image, work.headline, pub.thumbnail.lines, font, Path(tmp), runner)
+    inputs = (pub.thumbnail.lines, *(hashlib.sha256(p.read_bytes()).hexdigest() for p in (image, font)))
+    return Headline(work.headline, hashlib.sha256(repr(inputs).encode()).hexdigest())

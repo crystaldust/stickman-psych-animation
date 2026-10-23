@@ -8,7 +8,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from .config import TTS_STYLE, TTS_STYLE_EN
-from .subtitles import SUB_STYLE, SUB_STYLE_EN
+from .subtitles import SUB_STYLE, SUB_STYLE_9X16, SUB_STYLE_EN, SUB_STYLE_EN_9X16
 from .text import apply_homophones, norm, norm_en, split_sub, split_sub_en, spoken, spoken_en
 
 
@@ -26,6 +26,7 @@ class Lang:
     joiner: str  # 一个镜头的几行旁白拼成一段配音时用的分隔
     tts_prompt: str  # 含 {text}
     sub_style: str  # ASS 的 Style 行
+    sub_style_9x16: str  # 竖屏版的 Style 行
     speaker_field: str  # VideoConfig 里这个语言音色的字段名
     rate_field: str  # VideoConfig 里这个语言语速的字段名
 
@@ -34,10 +35,10 @@ class Lang:
 
 
 ZH = Lang(code="zh", norm=norm, canon=apply_homophones, spoken=spoken, split_sub=split_sub, joiner="",
-          tts_prompt=TTS_STYLE + "他一字不差地说：“{text}”", sub_style=SUB_STYLE, speaker_field="speaker",
-          rate_field="speech_rate")
+          tts_prompt=TTS_STYLE + "他一字不差地说：“{text}”", sub_style=SUB_STYLE, sub_style_9x16=SUB_STYLE_9X16,
+          speaker_field="speaker", rate_field="speech_rate")
 EN = Lang(code="en", norm=norm_en, canon=_same, spoken=spoken_en, split_sub=split_sub_en, joiner=" ",
           tts_prompt=TTS_STYLE_EN + 'He says, word for word: "{text}"', sub_style=SUB_STYLE_EN,
-          speaker_field="speaker_en", rate_field="speech_rate_en")
+          sub_style_9x16=SUB_STYLE_EN_9X16, speaker_field="speaker_en", rate_field="speech_rate_en")
 LANGS = {lang.code: lang for lang in (ZH, EN)}
 PRIMARY = ZH.code

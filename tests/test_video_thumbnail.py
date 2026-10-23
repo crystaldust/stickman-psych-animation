@@ -117,7 +117,7 @@ def test_font_sizes_shrink_to_fit_a_short_box_and_are_capped():
 
 
 def test_make_thumbnail_probes_colours_then_composes_one_frame(tmp_path):
-    runner = FakeRunner(ppm_pixels=[BG, BG, INK, INK, BG])
+    runner = FakeRunner(ppm_pixels=[BG, BG, INK, INK, BG] * 2, ppm_width=5)  # 中间两列画了东西
     out = tmp_path / "thumbnail.jpg"
 
     make_thumbnail(Path("img/s09.jpg"), out, parse_text("越怕失去\n**越推开**"), LAYOUTS["16x9"],
@@ -137,11 +137,57 @@ def test_make_thumbnail_probes_colours_then_composes_one_frame(tmp_path):
     assert not list((tmp_path / "tmp").glob("*.ppm"))
 
 
-def test_make_thumbnail_uses_the_whole_frame_when_nothing_stands_out(tmp_path):
-    runner = FakeRunner(ppm_pixels=[BG, BG])
+NO_SUBJECT = pytest.mark.parametrize("pixels", [
+    [BG, BG],  # 整张都是背景色，找不到人物
+    [(250, 250, 250)] * 3 + [BG] * 2,  # 背景有两块颜色（雪地和夜空）：「人物」范围横跨整个画面
+])
 
-    make_thumbnail(Path("a.jpg"), tmp_path / "t.jpg", parse_text("hi"), LAYOUTS["3x4"],
+
+@NO_SUBJECT
+def test_wide_cover_fills_with_the_whole_image_when_there_is_no_clear_subject(tmp_path, pixels):
+    runner = FakeRunner(ppm_pixels=pixels)
+
+    make_thumbnail(Path("a.jpg"), tmp_path / "t.jpg", parse_text("hi"), LAYOUTS["16x9"],
                    tmp_path / "f.ttf", tmp_path / "tmp", runner)
 
     graph = _graph(runner)
-    assert "crop=1920:1080:0:0" in graph and "s=1080x1440" in graph
+    assert "force_original_aspect_ratio=increase,crop=1920:1080" in graph
+    assert "[canvas][subj]overlay" not in graph
+
+
+@NO_SUBJECT
+@pytest.mark.parametrize("layout", ["3x4", "9x16"])
+def test_portrait_cover_extends_the_middle_of_the_image_when_there_is_no_clear_subject(tmp_path, pixels, layout):
+    # 回归：整张图铺满竖版封面会裁掉左右大半，人物被切开、封面字压到脸上。改成和竖屏视频一样：
+    # 裁中间 4:3 放在人物区，上下延伸背景色。
+    runner = FakeRunner(ppm_pixels=pixels)
+
+    make_thumbnail(Path("a.jpg"), tmp_path / "t.jpg", parse_text("hi"), LAYOUTS[layout],
+                   tmp_path / "f.ttf", tmp_path / "tmp", runner)
+
+    graph = _graph(runner)
+    width, height = LAYOUTS[layout].width, LAYOUTS[layout].height
+    assert "crop=1440:1080:240:0" in graph and f"scale={width}:810" in graph
+    assert "vstack=3,setsar=1[base]" in graph and "force_original_aspect_ratio" not in graph
+
+
+def test_a_second_solid_background_is_not_a_subject():
+    # 上半是夜空、下半是雪地：雪地是主色，夜空是贴满左右的一整块实心色，不能当人物抠出来
+    sky, snow = (60, 60, 160), (250, 250, 250)
+    pixels = bytes(c for p in [sky] * 4 + [snow] * 6 for c in p)
+
+    assert subject_box(2, 5, pixels, snow) is None
+
+
+def test_a_thin_line_across_the_frame_still_leaves_a_subject():
+    # 一条贯穿左右的地平线（第 8–9 行）加一个人物（第 1–7 行第 2–3 列）：稀疏，不算第二块背景
+    grid = [[BG] * 6 for _ in range(10)]
+    grid[8] = [INK] * 6
+    grid[9] = [INK] * 6
+    for y in range(1, 8):
+        grid[y][2] = grid[y][3] = INK
+    pixels = bytes(c for row in grid for p in row for c in p)
+
+    box = subject_box(6, 10, pixels, BG)
+
+    assert box is not None and box.x == 0 and box.x + box.w == 1920

@@ -14,6 +14,15 @@ from .errors import VideoError
 FPS = 30
 FRAME_W, FRAME_H = 1920, 1080
 
+# 抖音竖屏版：横版画面裁中间 4:3、缩到 1080 宽放在中部，上下用画面最靠边的一行颜色延伸填满（用户在三种样张里选的）。
+# 顶部常驻封面字，字幕在画面下方的延伸区里。
+VERT_W, VERT_H = 1080, 1920
+VERT_CROP_W = 1440
+VERT_TOP = 555
+VERT_SUB_BOTTOM = 1530  # 字幕底边的 y
+EDGE_ROW = 2  # 从离边缘第几行取颜色往外延伸：最外一行常有压缩噪点
+EDGE_BLUR = 20  # 延伸区横向模糊，碰到边缘的线条不会拉成一道道竖条
+
 # 配音拼接：每段只保留词前 HEAD_KEEP、词后 TAIL_KEEP 的静音，镜头之间再插 SHOT_GAP，
 # 所以镜头间实际停顿约 0.75 秒。段内停顿超过上限的从中间裁短。
 LEAD = 0.4

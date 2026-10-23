@@ -33,26 +33,43 @@ def inside_project(value: str | Path) -> Path:
 
 
 LANG_CODES = ("zh", "en")  # 和 lang.LANGS 一致；这里只管路径，不依赖 lang 模块
+WIDE, TALL = "16x9", "9x16"  # 横版是主版本；竖屏是抖音版
+FORMAT_CODES = (WIDE, TALL)
 
 
 @dataclass(frozen=True)
 class WorkDir:
     """lang 决定旁白、配音、字幕、片段和成片的位置；shots.json、图和图层所有语言共用。
 
-    中文（主版本）沿用原来的文件名，英文加 .en / _en 后缀。
+    fmt 决定画幅：竖屏版共用同一语言横版的配音和发布信息，只有字幕、片段、清单和成片另存。
+    中文横版（主版本）沿用原来的文件名，英文加 .en / _en 后缀，竖屏再加 .9x16 / _9x16。
     """
     root: Path
     lang: str = "zh"
+    fmt: str = WIDE
 
     def __post_init__(self) -> None:
         if self.lang not in LANG_CODES:
             raise VideoError(f"不支持的语言「{self.lang}」，应该是 {' / '.join(LANG_CODES)}")
+        if self.fmt not in FORMAT_CODES:
+            raise VideoError(f"不支持的画幅「{self.fmt}」，应该是 {' / '.join(FORMAT_CODES)}")
 
-    def _file(self, stem: str, ext: str) -> Path:
-        return self.root / (f"{stem}{ext}" if self.lang == LANG_CODES[0] else f"{stem}.{self.lang}{ext}")
+    @property
+    def label(self) -> str:
+        """报错里怎么称呼这个版本：en 版、竖屏版、en 竖屏版。"""
+        lang = "" if self.lang == LANG_CODES[0] else f"{self.lang} "
+        shape = "" if self.fmt == WIDE else "竖屏"
+        return f"{lang}{shape}版" if lang or shape else "中文版"
 
-    def _dir(self, name: str) -> Path:
-        return self.root / (name if self.lang == LANG_CODES[0] else f"{name}_{self.lang}")
+    def _tags(self, per_format: bool) -> list[str]:
+        return ([] if self.lang == LANG_CODES[0] else [self.lang]) + (
+            [self.fmt] if per_format and self.fmt != WIDE else [])
+
+    def _file(self, stem: str, ext: str, per_format: bool = False) -> Path:
+        return self.root / (".".join([stem, *self._tags(per_format)]) + ext)
+
+    def _dir(self, name: str, per_format: bool = False) -> Path:
+        return self.root / "_".join([name, *self._tags(per_format)])
 
     @property
     def narration(self) -> Path:
@@ -80,7 +97,7 @@ class WorkDir:
 
     @property
     def clip_dir(self) -> Path:
-        return self._dir("clips")
+        return self._dir("clips", per_format=True)
 
     @property
     def voice_wav(self) -> Path:
@@ -88,7 +105,7 @@ class WorkDir:
 
     @property
     def subs(self) -> Path:
-        return self._file("subs", ".ass")
+        return self._file("subs", ".ass", per_format=True)
 
     @property
     def srt(self) -> Path:
@@ -96,15 +113,15 @@ class WorkDir:
 
     @property
     def clip_list(self) -> Path:
-        return self._file("clips", ".txt")
+        return self._file("clips", ".txt", per_format=True)
 
     @property
     def manifest(self) -> Path:
-        return self._file("render", ".json")
+        return self._file("render", ".json", per_format=True)
 
     @property
     def timings(self) -> Path:
-        return self._file("timings", ".json")
+        return self._file("timings", ".json", per_format=True)
 
     @property
     def layers_dir(self) -> Path:
@@ -122,6 +139,11 @@ class WorkDir:
     @property
     def description(self) -> Path:
         return self._file("description", ".txt")
+
+    @property
+    def headline(self) -> Path:
+        """竖屏版顶部常驻的封面字：透明底 png，渲染时生成。"""
+        return self._file("headline", ".png", per_format=True)
 
     @property
     def package_tmp(self) -> Path:
@@ -151,4 +173,4 @@ class WorkDir:
         return self.clip_dir / f"{safe_id(shot_id)}.mp4"
 
     def default_output(self) -> Path:
-        return self._file(self.root.name, ".mp4")
+        return self._file(self.root.name, ".mp4", per_format=True)

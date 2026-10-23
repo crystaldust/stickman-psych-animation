@@ -13,7 +13,7 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
-from .compose import LOOK, Box, parse_ppm
+from .compose import LOOK, Box, parse_ppm, portrait_graph
 from .config import FRAME_H, FRAME_W
 from .errors import VideoError
 from .ffmpeg import Runner, ffmpeg, filter_escape
@@ -24,6 +24,7 @@ PROBE_W, PROBE_H = 192, 108
 BG_TOLERANCE = 60  # 和背景色的 RGB 距离（三通道差之和）超过它才算画了东西
 MIN_HITS = 2  # 一行或一列至少这么多个点才算，孤立的噪点不算
 SUBJECT_PAD = 0.03  # 人物范围四周多留画面宽、高的这个比例
+SOLID_FILL = 0.5  # 贴满左右的范围里，不是背景色的点超过这个比例，就是第二块背景色而不是人物
 
 MAX_LINES = 3
 MAX_LINE_EM = 9.0  # 一行最宽几个字号：中文约 11 个字，英文约 20 个字母
@@ -53,7 +54,11 @@ class Layout:
 LAYOUTS = {
     "16x9": Layout("16x9", 1920, 1080, Box(1000, 65, 880, 972), Box(30, 60, 1010, 960), -7),
     "3x4": Layout("3x4", 1080, 1440, Box(54, 576, 972, 806), Box(54, 58, 972, 518), -6),
+    "9x16": Layout("9x16", 1080, 1920, Box(54, 700, 972, 1120), Box(54, 90, 972, 560), -6),
 }
+# 竖屏视频顶部常驻的封面字：排在画面上方的延伸区里（竖屏画面从 y=555 开始）。
+HEADLINE_BOX = Box(60, 40, 960, 470)
+HEADLINE_ANGLE = -5
 
 
 @dataclass(frozen=True)
@@ -87,7 +92,12 @@ def dominant_color(pixels: bytes) -> RGB:
 
 
 def subject_box(width: int, height: int, pixels: bytes, bg: RGB) -> Box | None:
-    """不是背景色的部分（人物和道具）的范围，换算到 1920x1080，四周留一点边；整张都是背景色时返回 None。"""
+    """不是背景色的部分（人物和道具）的范围，换算到 1920x1080，四周留一点边。
+
+    没有明确的人物时返回 None：整张都是背景色，或者背景本身有两块颜色（比如夜空和雪地）——
+    这时「人物」左右贴满画面，而且大半是实心的另一种背景色，抠出来会在画布上留下一个方块。
+    贯穿左右的只是稀疏的线条（地平线、影子）不算。
+    """
     def far(i: int) -> bool:
         r, g, b = pixels[3 * i:3 * i + 3]
         return abs(r - bg[0]) + abs(g - bg[1]) + abs(b - bg[2]) > BG_TOLERANCE
@@ -96,6 +106,10 @@ def subject_box(width: int, height: int, pixels: bytes, bg: RGB) -> Box | None:
     cols = [x for x in range(width) if sum(row[x] for row in hits) >= MIN_HITS]
     rows = [y for y in range(height) if sum(hits[y]) >= MIN_HITS]
     if not cols or not rows:
+        return None
+    ys, xs = range(rows[0], rows[-1] + 1), range(cols[0], cols[-1] + 1)
+    filled = sum(hits[y][x] for y in ys for x in xs) / (len(ys) * len(xs))
+    if cols[0] == 0 and cols[-1] == width - 1 and filled > SOLID_FILL:
         return None
     kx, ky = FRAME_W / width, FRAME_H / height
     pad_x, pad_y = int(FRAME_W * SUBJECT_PAD), int(FRAME_H * SUBJECT_PAD)
@@ -161,9 +175,9 @@ def font_sizes(lines: tuple[Line, ...], box: Box) -> tuple[int, ...]:
 
 
 def _text_chain(lines: tuple[Line, ...], files: tuple[Path, ...], font: Path, colours: Palette,
-                layout: Layout) -> str:
+                box: Box, angle_deg: float) -> str:
     """透明画布上逐行画字：同色系深色的立体厚度（向右下叠几层）→ 描边的正文，最后整体旋转。"""
-    box, sizes = layout.text, font_sizes(lines, layout.text)
+    sizes = font_sizes(lines, box)
     chain = [f"color=c=black@0:s={box.w}x{box.h}", "format=rgba"]
     y = (box.h - int(sum(sizes) * LINE_GAP)) // 2
     for i, (line, file, size) in enumerate(zip(lines, files, sizes)):
@@ -178,7 +192,7 @@ def _text_chain(lines: tuple[Line, ...], files: tuple[Path, ...], font: Path, co
         chain.append(f"{common}:fontcolor={colours.accent if line.emphasis else colours.fill}"
                      f":borderw={border}:bordercolor={colours.stroke}:x={x}:y={y}")
         y += int(size * LINE_GAP)
-    angle = f"{layout.angle}*PI/180"
+    angle = f"{angle_deg}*PI/180"
     chain.append(f"rotate={angle}:c=none:ow=rotw({angle}):oh=roth({angle})")
     return ",".join(chain)
 
@@ -190,21 +204,34 @@ def _fit(subject: Box, area: Box) -> Box:
     return Box(area.x + (area.w - w) // 2, area.y + (area.h - h) // 2, w, h)
 
 
-def build_graph(layout: Layout, subject: Box, colours: Palette, text_chain: str) -> str:
-    placed, text = _fit(subject, layout.subject), layout.text
-    return (f"color=c={colours.background}:s={layout.width}x{layout.height}[canvas];"
+def _base(layout: Layout, subject: Box | None, colours: Palette) -> str:
+    """封面底图，输出 [base]：人物放大摆到同色画布的一侧。
+
+    没有明确人物时：横版整张图铺满；竖版铺满会裁掉左右大半，改成和竖屏视频一样裁中间 4:3、上下延伸背景色。
+    """
+    w, h = layout.width, layout.height
+    if subject is None and h > w:
+        top = layout.subject.y + (layout.subject.h - w * 3 // 4) // 2
+        return f"[0:v]scale={FRAME_W}:{FRAME_H}[full];{portrait_graph('full', 'base', w, h, top)};"
+    if subject is None:
+        return f"[0:v]scale={w}:{h}:force_original_aspect_ratio=increase,crop={w}:{h}[base];"
+    placed = _fit(subject, layout.subject)
+    return (f"color=c={colours.background}:s={w}x{h}[canvas];"
             f"[0:v]scale={FRAME_W}:{FRAME_H},crop={subject.w}:{subject.h}:{subject.x}:{subject.y},"
             f"scale={placed.w}:{placed.h}[subj];"
-            f"[canvas][subj]overlay={placed.x}:{placed.y}:shortest=1[base];"
+            f"[canvas][subj]overlay={placed.x}:{placed.y}:shortest=1[base];")
+
+
+def build_graph(layout: Layout, subject: Box | None, colours: Palette, text_chain: str) -> str:
+    text = layout.text
+    return (f"{_base(layout, subject, colours)}"
             f"{text_chain}[txt];"
             f"[base][txt]overlay=x={text.x + text.w // 2}-w/2:y={text.y + text.h // 2}-h/2,"
             f"{LOOK},noise=alls=6:allf=u,format=yuv420p")
 
 
-def make_thumbnail(image: Path, out: Path, lines: tuple[Line, ...], layout: Layout, font: Path, tmp: Path,
-                   runner: Runner) -> None:
-    tmp.mkdir(parents=True, exist_ok=True)
-    probe = tmp / f"{out.stem}.ppm"
+def _probe(image: Path, probe: Path, runner: Runner) -> tuple[RGB, Box | None]:
+    """背景主色和人物范围。"""
     ffmpeg(["-i", image, "-vf", f"scale={PROBE_W}:{PROBE_H},format=rgb24", "-frames:v", "1",
             "-f", "image2", "-c:v", "ppm", probe], runner)
     try:
@@ -212,10 +239,30 @@ def make_thumbnail(image: Path, out: Path, lines: tuple[Line, ...], layout: Layo
     finally:
         probe.unlink(missing_ok=True)
     bg = dominant_color(pixels)
-    subject = subject_box(width, height, pixels, bg) or Box(0, 0, FRAME_W, FRAME_H)
-    files = tuple(tmp / f"{out.stem}.line{i}.txt" for i in range(len(lines)))
+    return bg, subject_box(width, height, pixels, bg)
+
+
+def _line_files(lines: tuple[Line, ...], tmp: Path, stem: str) -> tuple[Path, ...]:
+    files = tuple(tmp / f"{stem}.line{i}.txt" for i in range(len(lines)))
     for file, line in zip(files, lines):
         file.write_text(line.text, encoding="utf-8")  # 用文件传字，免得在滤镜参数里转义
+    return files
+
+
+def make_thumbnail(image: Path, out: Path, lines: tuple[Line, ...], layout: Layout, font: Path, tmp: Path,
+                   runner: Runner) -> None:
+    tmp.mkdir(parents=True, exist_ok=True)
+    bg, subject = _probe(image, tmp / f"{out.stem}.ppm", runner)
+    files = _line_files(lines, tmp, out.stem)
     colours = palette(bg)
-    graph = build_graph(layout, subject, colours, _text_chain(lines, files, font, colours, layout))
+    graph = build_graph(layout, subject, colours, _text_chain(lines, files, font, colours, layout.text, layout.angle))
     ffmpeg(["-i", image, "-filter_complex", graph, "-frames:v", "1", "-q:v", "2", out], runner)
+
+
+def make_headline(image: Path, out: Path, lines: tuple[Line, ...], font: Path, tmp: Path, runner: Runner) -> None:
+    """竖屏视频顶部的封面字：配色和封面一样从封面镜头的背景色推出来，画在透明 png 上，渲染时叠到每一帧。"""
+    tmp.mkdir(parents=True, exist_ok=True)
+    bg, _ = _probe(image, tmp / f"{out.stem}.ppm", runner)
+    files = _line_files(lines, tmp, out.stem)
+    chain = _text_chain(lines, files, font, palette(bg), HEADLINE_BOX, HEADLINE_ANGLE)
+    ffmpeg(["-f", "lavfi", "-i", chain, "-frames:v", "1", out], runner)

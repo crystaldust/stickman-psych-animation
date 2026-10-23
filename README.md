@@ -21,6 +21,7 @@
 ⑨ 检查与返工     看联系表 → stickman video reshoot <dir> <镜头>
 ⑩ 英文版         /translate-script → 人审译文 → render --lang en → <slug>.en.mp4
 ⑪ 发布信息       /package-video → publish.json → stickman video package → 标题、简介、封面图
+⑫ 抖音竖屏版     stickman video render --format 9x16  → <slug>.9x16.mp4（不调接口）
 ```
 
 外部服务：火山方舟 **Seedream**（出图）、豆包 **seed-audio**（配音，复刻音色）、本机 **mlx-whisper**（转写参考文案）、本机 **ffmpeg**（剪辑）。
@@ -292,7 +293,7 @@ uv run stickman video reshoot data/videos/20261014-dan-xin s03 --lang en --no-ge
 
 ```bash
 /package-video data/videos/20261019-tui-kai          # Claude 挑封面镜头、写标题、简介、出处和封面字 → publish.json
-uv run stickman video package data/videos/20261019-tui-kai             # → title.txt、description.txt、thumbnail.jpg、thumbnail-3x4.jpg
+uv run stickman video package data/videos/20261019-tui-kai             # → title.txt、description.txt、thumbnail.jpg、thumbnail-3x4.jpg、thumbnail-9x16.jpg
 /package-video data/videos/20261014-dan-xin en       # 英文版 → publish.en.json
 uv run stickman video package data/videos/20261014-dan-xin --lang en   # → title.en.txt、description.en.txt、thumbnail.en.jpg
 ```
@@ -310,11 +311,24 @@ uv run stickman video package data/videos/20261014-dan-xin --lang en   # → tit
 - **简介** = 正文 + 自动排版的「本期出处」。出处优先写成图书（文章收在哪本书里就写那本书），其次是论文、访谈、演讲、文章（`kind`：book / paper / interview / lecture / article）。`link` 留给以后的商品链接，填了就在出处下面多一行「链接：…」。
 - **出处防编造**：中文版每条出处的 `author` 必须和草稿 front matter 里的作者一字不差（默认草稿 `drafts/<目录名>.md`，可用 `--draft` 指定）；英文版的出处条数要和中文版一一对应。草稿 locator 里没有的版本信息，要先派 `source-hunter` 核实。
 - **平台限制**：标题最多 100 个字符；中文简介连同出处最多 1000 字（抖音），英文最多 5000 字节（YouTube）；都不能有 `<` `>`。
-- **封面**：中文出 16:9（YouTube、抖音横屏）和 3:4 竖版（抖音），英文只出 16:9。
-  - 从所选镜头的整幅图里取背景主色和人物范围，在同色画布上把人物放大摆到一侧（竖版在下方），另一侧排大字。分层镜头没有整幅图，不能做封面，`glow` 镜头可以。
+- **封面**：中文出 16:9（YouTube、抖音横屏）、3:4 和 9:16 竖版（抖音），英文只出 16:9。
+  - 从所选镜头的整幅图里取背景主色和人物范围，在同色画布上把人物放大摆到一侧（竖版在下方），另一侧排大字。没有明确人物时（整张是背景色，或背景本身有两块颜色），横版整张图铺满；竖版和竖屏视频一样裁中间 4:3、上下延伸背景色。分层镜头没有整幅图，不能做封面，`glow` 镜头可以。
   - 字用得意黑（本身是倾斜粗体），整体再旋转 6–7°，每行左右错开；白字配深色描边和同色系的立体厚度，`**整行**` 包住的强调行用背景色的互补色（灰背景用暖黄）并且更大。
   - 封面字一到三行，每行中文最好不超过 6 个字，英文用大写短语；字号按文字框自动算，字越少越大。
   - 画面最后加和视频一致的轻微色差、暗角和颗粒。
+
+## ⑫ 抖音竖屏版
+
+```bash
+uv run stickman video render data/videos/20261019-tui-kai --format 9x16    # → <slug>.9x16.mp4
+uv run stickman video reshoot data/videos/20261019-tui-kai s03 --format 9x16 --no-generate
+```
+
+- 1080x1920。横版画面裁中间 4:3、缩到 1080 宽放在中部，上下用画面最靠边的一行颜色延伸填满（横向模糊过），看起来像同一张图。左右各裁掉 240 像素（横版的八分之一），挤在画面边缘的东西会被裁掉。
+- 顶部常驻 `publish.json` 里的封面字，配色和封面一样；所以要先写好 `publish.json`，改了封面字要整条重新 render。字幕的分句和时间与横版相同，只是放在画面下方的延伸区里。
+- **不调任何接口**：共用横版的图和配音，缺什么就报错。中文横版必须先用当前的图、motion 和画面效果渲染过（检查和英文版一样）。英文也能出竖屏（`--lang en --format 9x16`）。
+- 产物带 `.9x16` / `_9x16`：`clips_9x16/`、`subs.9x16.ass`、`render.9x16.json`、`timings.9x16.json`、`headline.9x16.png`（顶部封面字）、`<slug>.9x16.mp4`。
+- 抖音中视频伙伴计划只给 16:9 横屏视频算收益；竖屏版适合普通推荐流。
 
 ## 目录结构
 
@@ -335,8 +349,8 @@ data/videos/<slug>/
   voice/  voice_trim/  voice.wav # 配音
   subs.ass  subs.srt             # 字幕
   clips/  render.json  timings.json
-  publish.json  title.txt  description.txt  thumbnail.jpg  thumbnail-3x4.jpg   # 发布信息
-  <slug>.mp4                     # 成片（英文版另有 *.en.* / *_en/）
+  publish.json  title.txt  description.txt  thumbnail.jpg  thumbnail-3x4.jpg  thumbnail-9x16.jpg   # 发布信息
+  <slug>.mp4                     # 成片（英文版另有 *.en.* / *_en/，竖屏版另有 *.9x16.* / *_9x16/）
 ```
 
 ## 开发

@@ -9,7 +9,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from .config import FPS, FRAME_H, FRAME_W
+from .config import EDGE_BLUR, EDGE_ROW, FPS, FRAME_H, FRAME_W, VERT_CROP_W
 from .errors import VideoError
 from .ffmpeg import Runner, ffmpeg
 from .motion import GREEN, MAGENTA, Motion, chroma_distance
@@ -87,6 +87,19 @@ def measure(image: Path, key: tuple[int, int, int], probe: Path, runner: Runner)
     if max(box.w, box.h) > MAX_ASPECT * max(1, min(box.w, box.h)):
         raise VideoError(f"{image} 抠出来的内容是 {box.w}x{box.h} 的细条，不像一个完整的东西，重新生成这一层")
     return box
+
+
+def portrait_graph(src: str, out: str, width: int, height: int, top: int) -> str:
+    """1920x1080 画面排进竖幅：裁中间 4:3 缩到 width 宽，上边缘放在 top；上下各用靠边的一行像素拉满再模糊，
+    看起来像同一张图延伸出去。竖屏视频和竖版封面共用。"""
+    pic_h = width * FRAME_H // VERT_CROP_W // 2 * 2
+    bottom = height - top - pic_h
+    return (f"[{src}]crop={VERT_CROP_W}:{FRAME_H}:{(FRAME_W - VERT_CROP_W) // 2}:0,scale={width}:{pic_h},"
+            "format=yuv444p,split=3[vpic][vtop][vbot];"  # yuv420 下单行像素的色度会错位，延伸区发黑
+            f"[vtop]crop={width}:1:0:{EDGE_ROW},scale={width}:{top},gblur=sigma={EDGE_BLUR}[vtop2];"
+            f"[vbot]crop={width}:1:0:{pic_h - 1 - EDGE_ROW},scale={width}:{bottom},gblur=sigma={EDGE_BLUR}[vbot2];"
+            # 一行拉成几百行时 scale 会改 SAR，vignette 按 SAR 算暗角会把整帧压黑，所以拼好后归一
+            f"[vtop2][vpic][vbot2]vstack=3,setsar=1[{out}]")
 
 
 def _keyed(index: int, key: tuple[int, int, int], crop: Box | None = None) -> str:

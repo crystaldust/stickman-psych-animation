@@ -144,7 +144,7 @@ def _write(path, raw):
     path.write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
 
 
-def test_package_writes_title_description_and_both_chinese_covers(tmp_path):
+def test_package_writes_title_description_and_all_chinese_covers(tmp_path):
     work, draft, font = _setup(tmp_path)
     _write(work.publish, ZH)
     runner = FakeRunner()
@@ -153,10 +153,10 @@ def test_package_writes_title_description_and_both_chinese_covers(tmp_path):
 
     assert work.title.read_text(encoding="utf-8") == ZH["title"] + "\n"
     assert "本期出处" in work.description.read_text(encoding="utf-8")
-    assert outputs == (work.title, work.description, work.thumbnail("16x9"), work.thumbnail("3x4"))
-    assert [c[-1] for c in runner.ffmpeg_calls() if c[-1].endswith(".jpg")] == [
-        str(work.thumbnail("16x9")), str(work.thumbnail("3x4"))]
-    assert work.thumbnail("16x9").name == "thumbnail.jpg" and work.thumbnail("3x4").name == "thumbnail-3x4.jpg"
+    covers = (work.thumbnail("16x9"), work.thumbnail("3x4"), work.thumbnail("9x16"))
+    assert outputs == (work.title, work.description, *covers)
+    assert [c[-1] for c in runner.ffmpeg_calls() if c[-1].endswith(".jpg")] == [str(c) for c in covers]
+    assert [c.name for c in covers] == ["thumbnail.jpg", "thumbnail-3x4.jpg", "thumbnail-9x16.jpg"]
 
 
 def test_english_package_only_makes_the_wide_cover(tmp_path):

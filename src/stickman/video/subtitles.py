@@ -1,11 +1,18 @@
 """字幕文件：烧进画面的 ASS，以及给 YouTube 上传字幕轨用的 SRT。"""
 
+from .config import FRAME_H, FRAME_W, VERT_H, VERT_SUB_BOTTOM
+
 Event = tuple[float, float, str]  # 和 timeline.Event 相同；不从 timeline 导入，免得 lang → subtitles → timeline 循环
 
 SUB_STYLE = "Style: Default,PingFang SC,66,&H00FFFFFF,&H00000000,&H00000000,1,1,5,0,2,70\n"
 SUB_STYLE_EN = "Style: Default,Helvetica Neue,60,&H00FFFFFF,&H00000000,&H00000000,1,1,5,0,2,70\n"
+# 竖屏：字幕底边落在画面下方的延伸区里。一行 16 个汉字 60 号约 960 像素宽；英文一行最多 42 个字符，
+# 46 号约 1000 像素，宽字母多时也不会被 libass 折成两行。
+_MARGIN_9X16 = VERT_H - VERT_SUB_BOTTOM
+SUB_STYLE_9X16 = f"Style: Default,PingFang SC,60,&H00FFFFFF,&H00000000,&H00000000,1,1,5,0,2,{_MARGIN_9X16}\n"
+SUB_STYLE_EN_9X16 = f"Style: Default,Helvetica Neue,46,&H00FFFFFF,&H00000000,&H00000000,1,1,5,0,2,{_MARGIN_9X16}\n"
 _HEAD = (
-    "[Script Info]\nScriptType: v4.00+\nPlayResX: 1920\nPlayResY: 1080\n\n"
+    "[Script Info]\nScriptType: v4.00+\nPlayResX: {w}\nPlayResY: {h}\n\n"
     "[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, "
     "Bold, BorderStyle, Outline, Shadow, Alignment, MarginV\n"
 )
@@ -21,9 +28,9 @@ def ts(sec: float) -> str:
     return f"{h}:{m:02d}:{s:02d}.{c:02d}"
 
 
-def ass_document(events: tuple[Event, ...], style: str = SUB_STYLE) -> str:
+def ass_document(events: tuple[Event, ...], style: str = SUB_STYLE, play_res: tuple[int, int] = (FRAME_W, FRAME_H)) -> str:
     body = "\n".join(f"Dialogue: 0,{ts(a)},{ts(b)},Default,{text}" for a, b, text in events)
-    return _HEAD + style + _EVENTS + body + "\n"
+    return _HEAD.format(w=play_res[0], h=play_res[1]) + style + _EVENTS + body + "\n"
 
 
 def srt_ts(sec: float) -> str:

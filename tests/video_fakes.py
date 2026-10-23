@@ -15,9 +15,11 @@ _EN_TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9'’-]*|\s+|[^A-Za-z0-9\s]")
 class FakeRunner:
     """记录每条命令；ffmpeg 命令会创建输出文件（最后一个参数），ffprobe 按路径返回预置的时长或帧数。"""
 
-    def __init__(self, durations=None, frames=None, default_duration=2.0, fail_on=None, ppm_pixels=None):
+    def __init__(self, durations=None, frames=None, default_duration=2.0, fail_on=None, ppm_pixels=None,
+                 ppm_width=None):
         self.calls: list[list[str]] = []
         self.ppm_pixels = ppm_pixels  # 探测图层范围时写出的 .ppm：默认 2x1 全黑，即内容铺满整个画面
+        self.ppm_width = ppm_width  # 不给就是一行；给了就按这个宽度折成多行
         self.durations = dict(durations or {})
         self.frames = dict(frames or {})
         self.default_duration = default_duration
@@ -38,7 +40,8 @@ class FakeRunner:
         out.parent.mkdir(parents=True, exist_ok=True)
         if out.suffix == ".ppm":
             pixels = self.ppm_pixels or [(0, 0, 0), (0, 0, 0)]
-            out.write_bytes(ppm(len(pixels), 1, pixels))
+            width = self.ppm_width or len(pixels)
+            out.write_bytes(ppm(width, len(pixels) // width, pixels))
             return ""
         out.write_bytes(b"media:" + " ".join(cmd).encode())
         return ""

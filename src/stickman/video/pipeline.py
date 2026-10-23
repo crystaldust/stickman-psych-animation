@@ -1,6 +1,7 @@
 """整条流水线：分镜 → 出图 ∥ 配音 → 拼配音、算字幕 → 渲染片段 → 拼接混音。
 
 WorkDir.lang 选语言版本。图和分镜归中文版（主版本）：英文版只配音、渲染，不出图，缺图时报错。
+WorkDir.fmt 选画幅。竖屏版（9x16）共用同一语言横版的配音，不调任何接口，只重新排画面、加顶部封面字。
 
 已有的图和配音直接复用，所以失败后重跑只会补缺的那几个。配音只要和旁白对不上就报错，
 不会悄悄重新生成——那是要计费的。
@@ -15,9 +16,9 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import images, tts
+from . import images, publish, tts
 from .audio import Segment, VoiceTimeline, build_voice, missing_voice, read_meta
-from .config import ENCODER, FPS, KEYCHAIN_IMAGE, KEYCHAIN_TTS, VideoConfig
+from .config import ENCODER, FPS, FRAME_H, FRAME_W, KEYCHAIN_IMAGE, KEYCHAIN_TTS, VERT_H, VERT_W, VideoConfig
 from .errors import VideoError
 from .ffmpeg import Runner, count_frames, run_command
 from .keychain import read_secret
@@ -35,7 +36,7 @@ from .render import (
 from .shots import ImageTarget, ShotSpec, load_spec, shot_lines
 from .subtitles import ass_document, srt_document
 from .timeline import clip_frames
-from .workdir import WorkDir, safe_id
+from .workdir import WIDE, WorkDir, safe_id
 
 
 @dataclass(frozen=True)
@@ -87,6 +88,15 @@ def _existing(value: str, kind: str) -> Path:
 
 def _lang(work: WorkDir) -> Lang:
     return LANGS[work.lang]
+
+
+def _wide(work: WorkDir) -> bool:
+    return work.fmt == WIDE
+
+
+def _follows(work: WorkDir) -> bool:
+    """画面跟着中文横版走、自己不出图的版本：其他语言版和竖屏版。"""
+    return work.lang != PRIMARY or not _wide(work)
 
 
 def _stale_voices(work: WorkDir, segments: tuple[Segment, ...]) -> tuple[str, ...]:
@@ -172,15 +182,17 @@ def _require_cached(work: WorkDir, spec: ShotSpec, segments: tuple[Segment, ...]
     no_img = [t.id for t in spec.targets(work) if t.id not in skip_images and not t.path.is_file()]
     no_voice = missing_voice(work, spec.ids())
     if stale or no_img or no_voice:
+        fix = "先运行 render 补齐" if _wide(work) else "竖屏版不调接口，先把横版 render 完整"
         raise VideoError(f"素材不全：缺图 {no_img or '无'}；缺配音 {list(no_voice) or '无'}；"
-                         f"配音过期 {list(stale) or '无'}。先运行 render 补齐")
+                         f"配音过期 {list(stale) or '无'}。{fix}")
     return MediaReport()
 
 
 def _voice(work: WorkDir, segments: tuple[Segment, ...], runner: Runner) -> VoiceTimeline:
     lang = _lang(work)
     timeline = build_voice(work, segments, runner)
-    work.subs.write_text(ass_document(timeline.events, lang.sub_style), encoding="utf-8")
+    style, size = (lang.sub_style, (FRAME_W, FRAME_H)) if _wide(work) else (lang.sub_style_9x16, (VERT_W, VERT_H))
+    work.subs.write_text(ass_document(timeline.events, style, size), encoding="utf-8")
     work.srt.write_text(srt_document(timeline.events), encoding="utf-8")
     return timeline
 
@@ -194,24 +206,29 @@ def _digests(targets: tuple[ImageTarget, ...]) -> dict[str, str]:
 
 
 def _follow_primary(work: WorkDir, spec: ShotSpec, targets: tuple[ImageTarget, ...]) -> dict[str, str]:
-    """其他语言版的画面跟着中文版成片走：中文版每个镜头都要是用现在的图、motion 和画面效果渲染的。
+    """其他语言版和竖屏版的画面跟着中文版成片走：中文版每个镜头都要是用现在的图、motion 和画面效果渲染的。
 
     在配音、渲染之前检查，不一致就不花钱。返回现在每个镜头的画面指纹。
     """
     missing = [t.id for t in targets if not t.path.is_file()]
     if missing:
-        raise VideoError(f"{work.lang} 版共用中文版的图，缺图 {', '.join(missing)}：先渲染中文版")
+        raise VideoError(f"{work.label}共用中文版的图，缺图 {', '.join(missing)}：先渲染中文版")
     primary = WorkDir(work.root)
     if not primary.manifest.is_file():
-        raise VideoError(f"{work.lang} 版的画面跟着中文版走，中文版还没有用 render 渲染过：先渲染中文版")
+        raise VideoError(f"{work.label}的画面跟着中文版走，中文版还没有用 render 渲染过：先渲染中文版")
     looks = shot_looks(spec.shots, _digests(targets))
     done = read_manifest(primary).get("looks", {})
     stale = [sid for sid, look in looks.items() if done.get(sid) != look]
     if stale:
         ids = " ".join(stale)
         raise VideoError(f"中文版成片里这些镜头不是用现在的图、motion 或画面效果渲染的：{ids}。"
-                         f"先重渲中文版（reshoot <目录> {ids} --no-generate），再渲染 {work.lang} 版")
+                         f"先重渲中文版（reshoot <目录> {ids} --no-generate），再渲染{work.label}")
     return looks
+
+
+def _headline(work: WorkDir, spec: ShotSpec, config: VideoConfig, runner: Runner) -> publish.Headline | None:
+    """竖屏版顶部的封面字（每次渲染都按 publish.json 重画）；横版没有。"""
+    return None if _wide(work) else publish.headline(work, spec, Path(config.thumb_font), runner)
 
 
 def render(work: WorkDir, config: VideoConfig, services: Services, out: Path, offline: bool) -> RenderReport:
@@ -221,19 +238,22 @@ def render(work: WorkDir, config: VideoConfig, services: Services, out: Path, of
     timings: dict[str, float] = {}
     t_all = time.monotonic()
     targets = spec.targets(work)
-    if work.lang != PRIMARY:
+    if _follows(work):
         _follow_primary(work, spec, targets)
-    to_generate = targets if work.lang == PRIMARY else ()  # 其他语言版共用中文版的图，不自己出图
+    to_generate = () if _follows(work) else targets  # 其他语言版、竖屏版共用中文版的图，不自己出图
     with _stage(timings, "media"):
-        media = (_require_cached(work, spec, segments) if offline
+        media = (_require_cached(work, spec, segments) if offline or not _wide(work)
                  else media_stage(work, segments, config, services, to_generate))
+    headline = _headline(work, spec, config, services.runner)
     with _stage(timings, "voice"):
         timeline = _voice(work, segments, services.runner)
     frames = clip_frames(timeline.shot_starts, timeline.total)
     with _stage(timings, "clips"):
-        render_clips(clip_jobs(work, spec.shots, frames), work.subs, config, services.runner)
+        render_clips(clip_jobs(work, spec.shots, frames), work.subs, config, services.runner,
+                     headline and headline.path)
     images = _digests(targets)
-    write_manifest(work, config, _frame_map(ids, frames), images, shot_looks(spec.shots, images))
+    write_manifest(work, config, _frame_map(ids, frames), images, shot_looks(spec.shots, images),
+                   headline and headline.fingerprint)
     with _stage(timings, "final"):
         out.parent.mkdir(parents=True, exist_ok=True)
         final_mix(work, ids, timeline.total, bgm, out, services.runner)
@@ -304,21 +324,25 @@ def _timeline_unchanged(work: WorkDir, manifest: dict, all_ids: tuple[str, ...],
 def reshoot(work: WorkDir, config: VideoConfig, services: Services, shot_ids: tuple[str, ...],
             out: Path, generate: bool) -> RenderReport:
     """只重做指定镜头或图层：（可选）重新出图 → 重渲这些片段 → 重新拼接混音。时间线和编码参数必须和上次一致。"""
-    if generate and work.lang != PRIMARY:
-        raise VideoError(f"{work.lang} 版共用中文版的图，不能在这里重新出图：先在中文版 reshoot 出新图，"
-                         f"再对 {work.lang} 版运行 reshoot --no-generate")
+    if generate and _follows(work):
+        raise VideoError(f"{work.label}共用中文版的图，不能在这里重新出图：先在中文版 reshoot 出新图，"
+                         f"再对{work.label}运行 reshoot --no-generate")
     spec, lines = load_spec(work)
     (ids, targets), all_ids, segments = _selected(spec, work, shot_ids), spec.ids(), shot_lines(spec, lines)
     manifest = read_manifest(work)
     _check_encoding(manifest, config)
     bgm = _existing(config.bgm, " BGM")
     _require_cached(work, spec, segments, skip_images=tuple(t.id for t in targets) if generate else ())
-    if work.lang != PRIMARY:
+    if _follows(work):
         looks = _follow_primary(work, spec, spec.targets(work))
         done = manifest.get("looks", {})
         behind = [sid for sid in all_ids if sid not in ids and done.get(sid) != looks[sid]]
         if behind:
-            raise VideoError(f"{work.lang} 版这些镜头和中文版成片的画面不一致，要一起重渲：{' '.join(behind)}")
+            raise VideoError(f"{work.label}这些镜头和中文版成片的画面不一致，要一起重渲：{' '.join(behind)}")
+    headline = _headline(work, spec, config, services.runner)
+    if headline is not None and manifest.get("headline") != headline.fingerprint:
+        raise VideoError("封面字（或封面镜头的图、字体）和上次竖屏渲染时不同，只重渲几个镜头会让顶部的字前后不一样，"
+                         "请运行 render")
     timings: dict[str, float] = {}
     with _stage(timings, "voice"):
         timeline, frames = _timeline_unchanged(work, manifest, all_ids, segments, services.runner)
@@ -331,12 +355,13 @@ def reshoot(work: WorkDir, config: VideoConfig, services: Services, shot_ids: tu
             media = media_stage(work, segments, config, services, targets, inputs)
     jobs = tuple(j for j in clip_jobs(work, spec.shots, frames) if j.shot_id in ids)
     with _stage(timings, "clips"):
-        render_clips(jobs, work.subs, config, services.runner)
+        render_clips(jobs, work.subs, config, services.runner, headline and headline.path)
         _check_new_clips(jobs, services.runner)
     current = {t.id for t in spec.targets(work)}  # 清单里 shots.json 已经没有的图（比如改分层前的整图）不再带下去
     digests = {k: v for k, v in {**manifest.get("images", {}), **_digests(targets)}.items() if k in current}
     redone = {sid: look for sid, look in shot_looks(spec.shots, digests).items() if sid in ids}
-    write_manifest(work, config, _frame_map(all_ids, frames), digests, {**manifest.get("looks", {}), **redone})
+    write_manifest(work, config, _frame_map(all_ids, frames), digests, {**manifest.get("looks", {}), **redone},
+                   headline and headline.fingerprint)
     with _stage(timings, "final"):
         out.parent.mkdir(parents=True, exist_ok=True)
         final_mix(work, all_ids, timeline.total, bgm, out, services.runner)

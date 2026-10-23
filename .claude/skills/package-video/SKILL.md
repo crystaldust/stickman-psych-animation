@@ -55,12 +55,12 @@ argument-hint: <工作目录，例如 data/videos/20261019-tui-kai> [en]
 ## 3. 生成并检查
 
 ```bash
-uv run stickman video package <工作目录>             # 中文：title.txt、description.txt、thumbnail.jpg、thumbnail-3x4.jpg
+uv run stickman video package <工作目录>             # 中文：title.txt、description.txt、thumbnail.jpg、thumbnail-3x4.jpg、thumbnail-9x16.jpg
 uv run stickman video package <工作目录> --lang en   # 英文：title.en.txt、description.en.txt、thumbnail.en.jpg
 ```
 
 - 报错就按提示改 `publish.json` 再跑，直到通过。
-- 用 Read 看生成的封面（16:9 和 3:4 竖版）：字要大、清楚，不压人物；人物主体要完整。字太挤就缩短封面字或少一行，镜头不合适就换一个。
+- 用 Read 看生成的封面（16:9、3:4 和 9:16 竖版）：字要大、清楚，不压人物；人物主体要完整。字太挤就缩短封面字或少一行，镜头不合适就换一个。
 
 ## 4. 交给用户
 

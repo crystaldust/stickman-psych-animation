@@ -16,7 +16,7 @@ from .errors import VideoError
 from .lang import LANGS, PRIMARY
 from .motion import max_layered
 from .shots import load_spec, shot_lines
-from .workdir import WorkDir, inside_project, safe_slug
+from .workdir import FORMAT_CODES, WIDE, WorkDir, inside_project, safe_slug
 
 EXIT_OK = 0
 EXIT_FAILED = 1
@@ -80,20 +80,23 @@ def _output(value: str | None, work: WorkDir) -> Path:
     out = inside_project(value)
     if out.suffix != ".mp4" or not out.is_relative_to(work.root):
         raise VideoError(f"--out 必须是工作目录 {work.root} 里的 .mp4 文件")
-    others = {WorkDir(work.root, code).default_output() for code in LANGS if code != work.lang}
+    others = {WorkDir(work.root, code, fmt).default_output() for code in LANGS for fmt in FORMAT_CODES
+              if (code, fmt) != (work.lang, work.fmt)}
     if out in others:
-        raise VideoError(f"--out 不能是其他语言版本的成片：{out.name}")
+        raise VideoError(f"--out 不能是其他语言或画幅版本的成片：{out.name}")
     return out
 
 
 def _prepare(args: argparse.Namespace) -> tuple[WorkDir, VideoConfig, Path]:
-    work = WorkDir(inside_project(args.work), args.lang)
+    work = WorkDir(inside_project(args.work), args.lang, args.fmt)
     safe_slug(work.root.name)  # 目录名会进 ffmpeg 滤镜参数，= 之类的字符会让它解析失败
     speaker_field = LANGS[work.lang].speaker_field  # --speaker 只换当前语言的音色
     config = load_config(work.root, {"ref_image": args.ref, speaker_field: args.speaker, "bgm": args.bgm,
                                       "image_model": args.image_model})
     # 参考图会上传给出图接口，BGM 会被读进成片：都限制在项目内（会解析符号链接）。
     config = replace(config, ref_image=str(inside_project(config.ref_image)), bgm=str(inside_project(config.bgm)))
+    if work.fmt != WIDE:  # 竖屏版要读封面字体画顶部的字
+        config = replace(config, thumb_font=str(inside_project(config.thumb_font)))
     return work, config, _output(args.out, work)
 
 
@@ -134,6 +137,9 @@ def _add_lang_arg(parser: argparse.ArgumentParser) -> None:
 def _add_media_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("work", help="工作目录，例如 data/videos/<slug>")
     _add_lang_arg(parser)
+    parser.add_argument("--format", dest="fmt", choices=FORMAT_CODES, default=WIDE,
+                        help="画幅，默认 16x9；9x16 是抖音竖屏版：共用横版的图和配音、不调接口，"
+                             "顶部常驻 publish.json 里的封面字，出 <目录名>.9x16.mp4")
     parser.add_argument("--out", help="成片路径，默认 <工作目录>/<目录名>.mp4（英文版 <目录名>.en.mp4）")
     parser.add_argument("--ref", help="角色参考图（默认见 config.py，可在工作目录的 video.json 里覆盖）")
     parser.add_argument("--speaker", help="当前语言的配音音色 id")
